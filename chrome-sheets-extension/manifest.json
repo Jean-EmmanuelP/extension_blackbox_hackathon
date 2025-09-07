@@ -1,19 +1,23 @@
 {
   "manifest_version": 3,
-  "name": "Google Sheets SQL Query Extension",
-  "version": "1.0.0",
-  "description": "Interrogez vos données Google Sheets avec des requêtes en langage naturel",
+  "name": "Google Sheet SQL MVP v2",
+  "version": "2.0.0",
+  "description": "Analyse financière avancée pour CEO avec insights IA et graphiques interactifs",
   
   "permissions": [
+    "tabs",
     "storage",
     "identity",
-    "activeTab"
+    "activeTab",
+    "downloads",
+    "scripting"
   ],
   
   "host_permissions": [
     "https://sheets.googleapis.com/*",
     "https://www.googleapis.com/*",
-    "https://api.blackbox.ai/*"
+    "https://api.blackbox.ai/*",
+    "https://docs.google.com/*"
   ],
   
   "background": {
@@ -35,10 +39,18 @@
     "128": "icon.png"
   },
   
-  "oauth2": {
-    "client_id": "536318065020-4rfuggcfkfvi51pq98e1tanupooar5fk.apps.googleusercontent.com",
-    "scopes": [
-      "https://www.googleapis.com/auth/spreadsheets.readonly"
-    ]
-  }
+  "content_scripts": [
+    {
+      "matches": ["https://docs.google.com/spreadsheets/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  
+  "web_accessible_resources": [
+    {
+      "resources": ["agents/*.js", "lib/*.js", "styles/*.css"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

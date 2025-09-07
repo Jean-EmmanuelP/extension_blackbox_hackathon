@@ -1,25 +1,29 @@
 {
-  "name": "chrome-sheets-sql-extension",
-  "version": "1.0.0",
-  "description": "Extension Chrome pour interroger Google Sheets avec des requêtes en langage naturel",
+  "name": "google-sheet-sql-mvp-v2",
+  "version": "2.0.0",
+  "description": "Extension Chrome pour l'analyse financière avancée avec IA et graphiques interactifs",
   "main": "background.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "echo \"Build completed\"",
+    "watch": "echo \"Watching for changes...\""
   },
   "keywords": [
     "chrome-extension",
     "google-sheets",
-    "sql",
-    "natural-language"
+    "financial-analytics",
+    "ai",
+    "blackbox",
+    "csv",
+    "excel",
+    "charts"
   ],
-  "author": "",
+  "author": "Financial Analytics Team",
   "license": "MIT",
   "dependencies": {
-    "googleapis": "^118.0.0",
-    "csv-stringify": "^6.4.5",
-    "sqlite3": "^5.1.6"
+    "csv-parse": "^5.5.6",
+    "xlsx": "^0.18.5",
+    "chart.js": "^4.4.1"
   },
-  "devDependencies": {
-    "@types/chrome": "^0.0.253"
-  }
+  "devDependencies": {}
 }
