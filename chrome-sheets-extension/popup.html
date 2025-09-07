@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets Query</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Reset & Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Font Classes */
+        .lato-thin {
+            font-family: "Lato", sans-serif;
+            font-weight: 100;
+            font-style: normal;
+        }
+
+        .lato-light {
+            font-family: "Lato", sans-serif;
+            font-weight: 300;
+            font-style: normal;
+        }
+
+        .lato-regular {
+            font-family: "Lato", sans-serif;
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        .lato-bold {
+            font-family: "Lato", sans-serif;
+            font-weight: 700;
+            font-style: normal;
+        }
+
+        .lato-black {
+            font-family: "Lato", sans-serif;
+            font-weight: 900;
+            font-style: normal;
+        }
+
+        /* Minimaliste Google Style */
+        body {
+            width: 450px;
+            min-height: 400px;
+            font-family: "Roboto", "Lato", sans-serif;
+            font-weight: 400;
+            background: #ffffff;
+            color: #202124;
+        }
+
+        .container {
+            padding: 24px;
+        }
+
+        /* Header */
+        .header {
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e8eaed;
+        }
+
+        h1 {
+            font-family: "Lato", sans-serif;
+            font-weight: 300;
+            font-size: 22px;
+            color: #202124;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo {
+            width: 24px;
+            height: 24px;
+            display: inline-block;
+        }
+
+        /* Search Input */
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            opacity: 0.5;
+        }
+
+        #queryInput {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            font-family: "Roboto", sans-serif;
+            font-size: 15px;
+            font-weight: 400;
+            color: #202124;
+            transition: all 0.2s ease;
+            background: #fff;
+        }
+
+        #queryInput:hover {
+            background: #f8f9fa;
+            border-color: #dadce0;
+        }
+
+        #queryInput:focus {
+            outline: none;
+            border-color: #202124;
+            background: #fff;
+        }
+
+        #queryInput::placeholder {
+            color: #5f6368;
+            font-weight: 400;
+        }
+
+        /* Buttons */
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px 24px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            font-family: "Roboto", sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fff;
+            color: #202124;
+        }
+
+        button:hover {
+            background: #f8f9fa;
+            border-color: #dadce0;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3);
+        }
+
+        button:active {
+            background: #e8eaed;
+        }
+
+        button:disabled {
+            background: #f8f9fa;
+            color: #80868b;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        #executeBtn {
+            background: #202124;
+            color: #fff;
+            border: none;
+        }
+
+        #executeBtn:hover {
+            background: #303134;
+            box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3);
+        }
+
+        #executeBtn:disabled {
+            background: #80868b;
+            color: #fff;
+        }
+
+        #refreshBtn {
+            background: #fff;
+            color: #202124;
+        }
+
+        /* Status Messages */
+        #status {
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: "Roboto", sans-serif;
+            display: none;
+        }
+
+        #status.show {
+            display: block;
+        }
+
+        .status.loading {
+            background: #f8f9fa;
+            color: #5f6368;
+            border-left: 4px solid #202124;
+        }
+
+        .status.error {
+            background: #fce8e6;
+            color: #d93025;
+            border-left: 4px solid #d93025;
+        }
+
+        .status.success {
+            background: #e6f4ea;
+            color: #137333;
+            border-left: 4px solid #137333;
+        }
+
+        /* Results */
+        #results {
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-family: "Roboto Mono", monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #202124;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            display: none;
+        }
+
+        #results:not(:empty) {
+            display: block;
+        }
+
+        /* Scrollbar */
+        #results::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #results::-webkit-scrollbar-track {
+            background: #f1f3f4;
+            border-radius: 8px;
+        }
+
+        #results::-webkit-scrollbar-thumb {
+            background: #dadce0;
+            border-radius: 8px;
+        }
+
+        #results::-webkit-scrollbar-thumb:hover {
+            background: #bdc1c6;
+        }
+
+        /* Loading animation */
+        .loader {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #202124;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Examples */
+        .examples {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #e8eaed;
+        }
+
+        .examples-title {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #5f6368;
+            margin-bottom: 8px;
+            font-family: "Lato", sans-serif;
+        }
+
+        .example-chip {
+            display: inline-block;
+            padding: 4px 12px;
+            margin: 4px;
+            background: #f8f9fa;
+            border: 1px solid #e8eaed;
+            border-radius: 16px;
+            font-size: 12px;
+            color: #5f6368;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .example-chip:hover {
+            background: #e8eaed;
+            color: #202124;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <svg class="logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="3" width="18" height="18" stroke="#202124" stroke-width="2"/>
+                    <line x1="3" y1="9" x2="21" y2="9" stroke="#202124" stroke-width="2"/>
+                    <line x1="3" y1="15" x2="21" y2="15" stroke="#202124" stroke-width="2"/>
+                    <line x1="9" y1="3" x2="9" y2="21" stroke="#202124" stroke-width="2"/>
+                </svg>
+                Sheets Query
+            </h1>
+        </div>
+        
+        <div class="search-container">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="11" cy="11" r="8" stroke="#5f6368" stroke-width="2"/>
+                <path d="M21 21l-4.35-4.35" stroke="#5f6368" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <input 
+                type="text" 
+                id="queryInput" 
+                placeholder="Rechercher dans vos données..."
+                autofocus
+            />
+        </div>
+        
+        <div class="button-group">
+            <button id="executeBtn">Rechercher</button>
+            <button id="refreshBtn">↻ Actualiser</button>
+        </div>
+        
+        <div id="status"></div>
+        
+        <div id="results"></div>
+        
+        <div class="examples">
+            <div class="examples-title">Exemples de requêtes</div>
+            <span class="example-chip" onclick="setQuery('prix > 100')">prix > 100</span>
+            <span class="example-chip" onclick="setQuery('quantité < 10')">quantité < 10</span>
+            <span class="example-chip" onclick="setQuery('popularité haute')">popularité haute</span>
+        </div>
+    </div>
+    
+    <script>
+        function setQuery(query) {
+            document.getElementById('queryInput').value = query;
+            document.getElementById('queryInput').focus();
+        }
+    </script>
+    <script src="popup.js"></script>
+</body>
+</html>

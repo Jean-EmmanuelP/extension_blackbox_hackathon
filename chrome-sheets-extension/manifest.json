@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Google Sheets SQL Query Extension",
+  "version": "1.0.0",
+  "description": "Interrogez vos données Google Sheets avec des requêtes en langage naturel",
+  
+  "permissions": [
+    "storage",
+    "identity",
+    "activeTab"
+  ],
+  
+  "host_permissions": [
+    "https://sheets.googleapis.com/*",
+    "https://www.googleapis.com/*",
+    "https://api.blackbox.ai/*"
+  ],
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    }
+  },
+  
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  
+  "oauth2": {
+    "client_id": "536318065020-4rfuggcfkfvi51pq98e1tanupooar5fk.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/spreadsheets.readonly"
+    ]
+  }
+}
