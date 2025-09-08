@@ -23,6 +23,14 @@ let appState = {
     },
     isProcessing: false,
     lastUpdate: null,
+    // État de navigation pour détecter les changements de page
+    navigationState: {
+        isNavigating: false,
+        startTime: null,
+        endTime: null,
+        currentUrl: null,
+        previousUrl: null
+    },
     // Agent 4 - DriveSync Agent - État de synchronisation
     driveSync: {
         isActive: false,
@@ -59,15 +67,27 @@ let appState = {
     }
 };
 
+// Fonction pour extraire l'ID du Google Sheet depuis l'URL
+function extractSheetIdFromUrl(url) {
+    if (!url) return null;
+    
+    // Format URL Google Sheets: https://docs.google.com/spreadsheets/d/SHEET_ID/edit...
+    const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    return match ? match[1] : null;
+}
+
 // Fonction pour identifier les cellules importantes et leurs références
 function identifyImportantCells(data) {
     const important = {
-        largestExpense: { value: 0, row: null, col: null, description: null },
-        largestRevenue: { value: 0, row: null, col: null, description: null },
+        largestExpense: { value: 0, row: null, col: null, description: null, cellRef: null },
+        largestRevenue: { value: 0, row: null, col: null, description: null, cellRef: null },
+        largestBalance: { value: 0, row: null, col: null, description: null, cellRef: null, date: null },
         recurringPayments: [],
         anomalies: [],
         keyMetrics: []
     };
+    
+    console.log('📍 [DEBUG] Identification des cellules importantes - Données:', data.values?.length || 0, 'lignes');
     
     if (!data || !data.values || data.values.length < 2) return important;
     
@@ -77,15 +97,29 @@ function identifyImportantCells(data) {
     const descCol = headers.findIndex(h => h && h.toLowerCase().includes('description'));
     const dateCol = headers.findIndex(h => h && h.toLowerCase().includes('date'));
     
-    // Parcourir toutes les lignes de données
+    // Parcourir toutes les lignes de données pour identifier les cellules importantes
     for (let i = 1; i < data.values.length; i++) {
         const row = data.values[i];
         if (!row || row.length === 0) continue;
         
-        const debitValue = parseFloat(row[debitCol] || 0);
-        const creditValue = parseFloat(row[creditCol] || 0);
+        const debitValue = parseFloat(String(row[debitCol] || '0').replace(/[^0-9.-]/g, '')) || 0;
+        const creditValue = parseFloat(String(row[creditCol] || '0').replace(/[^0-9.-]/g, '')) || 0;
+        const balanceValue = parseFloat(String(row[headers.findIndex(h => h && h.toLowerCase().includes('balance'))] || '0').replace(/[^0-9.-]/g, '')) || 0;
         const description = row[descCol] || '';
         const date = row[dateCol] || '';
+        
+        // Debug pour les grosses valeurs
+        if (debitValue > 10000 || creditValue > 4000 || balanceValue > 90000) {
+            console.log(`📍 [DEBUG] Cellule importante ligne ${i + 1}:`, {
+                description,
+                debit: debitValue,
+                credit: creditValue,
+                balance: balanceValue,
+                cellDebit: `C${i + 1}`,
+                cellCredit: `D${i + 1}`,
+                cellBalance: `E${i + 1}`
+            });
+        }
         
         // Identifier la plus grosse dépense
         if (debitValue > important.largestExpense.value) {
@@ -93,11 +127,12 @@ function identifyImportantCells(data) {
                 value: debitValue,
                 row: i + 1,  // +1 car les lignes dans Sheets commencent à 1
                 col: String.fromCharCode(65 + debitCol),  // Convertir en lettre de colonne
-                cellRef: `${String.fromCharCode(65 + debitCol)}${i + 1}`,
+                cellRef: `C${i + 1}`, // Colonne C pour Debit
                 description: description,
                 date: date,
-                insight: `Plus grosse dépense: ${description} - $${debitValue.toFixed(2)}`
+                insight: `Plus grosse dépense: ${description} - $${debitValue.toFixed(2)} (Cellule C${i + 1})`
             };
+            console.log('🚀 [DEBUG] NOUVELLE PLUS GROSSE DÉPENSE:', important.largestExpense);
         }
         
         // Identifier le plus gros revenu
@@ -106,11 +141,26 @@ function identifyImportantCells(data) {
                 value: creditValue,
                 row: i + 1,
                 col: String.fromCharCode(65 + creditCol),
-                cellRef: `${String.fromCharCode(65 + creditCol)}${i + 1}`,
+                cellRef: `D${i + 1}`, // Colonne D pour Credit
                 description: description,
                 date: date,
-                insight: `Plus gros revenu: ${description} - $${creditValue.toFixed(2)}`
+                insight: `Plus gros revenu: ${description} - $${creditValue.toFixed(2)} (Cellule D${i + 1})`
             };
+            console.log('🚀 [DEBUG] NOUVEAU PLUS GROS REVENU:', important.largestRevenue);
+        }
+        
+        // Identifier la plus grosse balance
+        if (balanceValue > important.largestBalance.value) {
+            important.largestBalance = {
+                value: balanceValue,
+                row: i + 1,
+                col: 'E', // Colonne E pour Balance
+                cellRef: `E${i + 1}`,
+                description: description,
+                date: date,
+                insight: `Plus grosse balance: ${date} - $${balanceValue.toFixed(2)} (Cellule E${i + 1})`
+            };
+            console.log('🚀 [DEBUG] NOUVELLE PLUS GROSSE BALANCE:', important.largestBalance);
         }
         
         // Identifier les paiements récurrents (même description apparaît plusieurs fois)
@@ -704,6 +754,10 @@ class AgentOrchestrator {
                 let totalDebit = 0;
                 const grouped = {};
                 const monthlyData = {};
+                
+                // Variables pour trouver la VRAIE plus grosse dépense (transaction individuelle)
+                let biggestExpense = { amount: 0, description: '', date: '', rowIndex: 0 };
+                let biggestRevenue = { amount: 0, description: '', date: '', rowIndex: 0 };
                 const categoryPatterns = {
                     'Ventes': ['Sale', 'Invoice', 'Payment'],
                     'Salaires': ['Salary', 'Payroll', 'Wage'],
@@ -716,13 +770,39 @@ class AgentOrchestrator {
                 };
                 
                 parsedData.data.forEach((row, index) => {
-                    // Extraire les données
-                    const creditRaw = row['Credit (USD)'] || row['credit'] || row['Credit'] || 0;
-                    const debitRaw = row['Debit (USD)'] || row['debit'] || row['Debit'] || 0;
-                    const credit = parseFloat(String(creditRaw).replace(/[^0-9.-]/g, '')) || 0;
-                    const debit = parseFloat(String(debitRaw).replace(/[^0-9.-]/g, '')) || 0;
-                    const description = row['Description'] || row['description'] || 'Autre';
-                    const dateStr = row['Date'] || row['date'] || '';
+                    // DEBUGGING: Voir la structure exacte de chaque row
+                    if (index < 3) {
+                        console.log('🔍 [DEBUG] Structure row:', Object.keys(row));
+                        console.log('🔍 [DEBUG] Row complète:', row);
+                    }
+                    
+                    // Extraire les données EXACTEMENT comme dans le CSV de l'utilisateur
+                    const dateStr = row['Date'] || '';
+                    const description = row['Description'] || '';
+                    const debitRaw = row['Debit (USD)'] || '';
+                    const creditRaw = row['Credit (USD)'] || '';
+                    const balanceRaw = row['Balance (USD)'] || '';
+                    
+                    // Parser les montants - simple conversion
+                    const debit = debitRaw ? parseFloat(String(debitRaw).replace(/[,$\s]/g, '')) || 0 : 0;
+                    const credit = creditRaw ? parseFloat(String(creditRaw).replace(/[,$\s]/g, '')) || 0 : 0;
+                    const balance = balanceRaw ? parseFloat(String(balanceRaw).replace(/[,$\s]/g, '')) || 0 : 0;
+                    
+                    // DEBUG: Afficher TOUTES les données pour vérification complète
+                    console.log(`🔍 [ROW ${index + 1}] "${description}" | Debit: ${debit} | Credit: ${credit} | Balance: ${balance}`);
+                    
+                    // Vérifier spécialement les grosses valeurs
+                    if (debit > 40000 || credit > 10000) {
+                        console.log('🚀 [GROSSE VALEUR] ' + JSON.stringify({
+                            ligne: index + 1,
+                            description,
+                            debitRaw,
+                            creditRaw,
+                            debit,
+                            credit,
+                            balance
+                        }));
+                    }
                     
                     // Catégorisation intelligente
                     let category = 'Autres';
@@ -744,15 +824,43 @@ class AgentOrchestrator {
                         }
                     }
                     
-                    if (index < 5) {
+                    // Logging détaillé pour le debug
+                    if (index < 5 || debit > 10000 || credit > 4000) {
                         console.log(`💰 [DEBUG] Ligne ${index + 1}:`);
                         console.log(`  - Date: ${dateStr}`);
                         console.log(`  - Description: "${description}" -> Catégorie: ${category}`);
-                        console.log(`  - Credit: ${credit} | Debit: ${debit}`);
+                        console.log(`  - Credit: ${credit} | Debit: ${debit} | Balance: ${balance}`);
                     }
                     
+                    // ADDITIONNER LES VRAIES VALEURS
                     totalCredit += credit;
                     totalDebit += debit;
+                    
+                    // TROUVER LA PLUS GROSSE TRANSACTION INDIVIDUELLE
+                    if (debit > biggestExpense.amount) {
+                        biggestExpense = {
+                            amount: debit,
+                            description: description,
+                            date: dateStr,
+                            rowIndex: index + 1
+                        };
+                        console.log(`🔥 [NOUVELLE PLUS GROSSE DÉPENSE] ${debit} USD - "${description}"`);
+                    }
+                    
+                    if (credit > biggestRevenue.amount) {
+                        biggestRevenue = {
+                            amount: credit,
+                            description: description,
+                            date: dateStr,
+                            rowIndex: index + 1
+                        };
+                        console.log(`💎 [NOUVEAU PLUS GROS REVENU] ${credit} USD - "${description}"`);
+                    }
+                    
+                    // DEBUG: Voir les totaux qui s'accumulent
+                    if (index < 10 || (index + 1) % 10 === 0) {
+                        console.log(`📊 [TOTAUX après ligne ${index + 1}] Credit total: ${totalCredit} | Debit total: ${totalDebit}`);
+                    }
                     
                     // Grouper par catégorie
                     if (!grouped[category]) {
@@ -782,9 +890,18 @@ class AgentOrchestrator {
                     }
                 });
                 
-                // Calculer les statistiques avancées
-                const avgTransaction = (totalCredit + totalDebit) / (parsedData.data.length * 2);
-                const profitMargin = totalCredit > 0 ? ((totalCredit - totalDebit) / totalCredit * 100) : 0;
+                // RÉSULTATS FINAUX DES CALCULS
+                console.log('🎯 [RÉSULTATS FINAUX]');
+                console.log(`🎯 Total Credit (Revenus): ${totalCredit}`);
+                console.log(`🎯 Total Debit (Dépenses): ${totalDebit}`);
+                console.log(`🎯 Profit: ${totalCredit - totalDebit}`);
+                console.log(`🎯 Nombre de transactions: ${parsedData.data.length}`);
+                console.log(`🔥 Plus grosse dépense: ${biggestExpense.amount} USD - "${biggestExpense.description}"`);
+                console.log(`💎 Plus gros revenu: ${biggestRevenue.amount} USD - "${biggestRevenue.description}"`);
+                
+                // Calculer les statistiques simples
+                const profit = totalCredit - totalDebit;
+                const profitMargin = totalCredit > 0 ? ((profit / totalCredit) * 100) : 0;
                 
                 // Générer des insights détaillés
                 const insights = [];
@@ -912,18 +1029,42 @@ class AgentOrchestrator {
                     totals: { 
                         entries: totalCredit, 
                         exits: totalDebit, 
-                        net: totalCredit - totalDebit, 
+                        profit: profit,
+                        net: profit, 
                         margin: profitMargin.toFixed(1),
-                        avgTransaction: avgTransaction
+                        transactionCount: parsedData.data.length
                     },
+                    biggestExpense: biggestExpense,
+                    biggestRevenue: biggestRevenue,
                     grouped: grouped,
                     monthlyData: monthlyData,
                     insights: insights
                 };
+                
+                console.log('🎯 [ANALYSE CRÉÉE]', analysis.totals);
                 console.log('💰 [DEBUG] Agent Analyst: Analyse complète:', analysis);
                 console.log('💰 [DEBUG] VRAIES DONNÉES - Total Crédit:', totalCredit);
                 console.log('💰 [DEBUG] VRAIES DONNÉES - Total Débit:', totalDebit);
                 console.log('💰 [DEBUG] VRAIES DONNÉES - Groupes:', Object.keys(grouped));
+                
+                // ACTIVER LE SURLIGNAGE AUTOMATIQUE après l'analyse
+                setTimeout(() => {
+                    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+                        if (tabs[0] && tabs[0].url.includes('docs.google.com/spreadsheets')) {
+                            chrome.tabs.sendMessage(tabs[0].id, {
+                                action: 'activateHighlighting',
+                                biggestExpense: biggestExpense,
+                                biggestRevenue: biggestRevenue
+                            }, (response) => {
+                                if (response && response.success) {
+                                    console.log('📍 Surlignage automatique activé');
+                                } else {
+                                    console.log('📍 Erreur activation surlignage:', response);
+                                }
+                            });
+                        }
+                    });
+                }, 1000);
             }
             appState.financialAnalysis = analysis;
             
@@ -1086,83 +1227,428 @@ const orchestrator = new AgentOrchestrator();
 /**
  * Exécute une requête en langage naturel sur les données
  */
+/**
+ * Traduit une question en langage naturel vers SQL et l'exécute sur SQLite
+ */
 function executeNaturalQuery(query, data) {
-    console.log('🔍 [DEBUG] Exécution requête naturelle:', query);
+    console.log('🔍 [SQL] === DÉBUT TRADUCTION LANGAGE NATUREL → SQL ===');
+    console.log('🔍 [SQL] Question utilisateur:', query);
+    console.log('🔍 [SQL] Données reçues:', data ? data.length : 'AUCUNE');
     
     if (!data || data.length === 0) {
+        console.log('❌ [SQL] ERREUR: Aucune donnée disponible pour la requête');
+        console.log('❌ [SQL] État appState.parsedData:', appState.parsedData);
         return [];
     }
     
-    const queryLower = query.toLowerCase();
-    let results = [...data];
+    // Debug: Afficher la structure des premières données
+    console.log('🔍 [SQL] Structure de la première ligne:', data[0]);
+    console.log('🔍 [SQL] Colonnes disponibles:', Object.keys(data[0]));
     
-    // Patterns de recherche
-    // Pattern: "montant > X" ou "credit > X"
-    const greaterPattern = /(\w+)\s*>\s*([\d.]+)/;
-    const greaterMatch = queryLower.match(greaterPattern);
-    if (greaterMatch) {
-        const field = greaterMatch[1];
-        const value = parseFloat(greaterMatch[2]);
-        results = results.filter(row => {
-            const val = findFieldValue(row, field);
-            return val > value;
+    // ÉTAPE 1: Analyser la question et générer le SQL
+    const sqlQuery = translateToSQL(query);
+    console.log('🔍 [SQL] Requête SQL générée:', sqlQuery);
+    
+    // ÉTAPE 2: Créer une table SQLite temporaire en mémoire
+    const sqliteDB = createInMemorySQLiteTable(data);
+    console.log('🔍 [SQL] Table SQLite créée avec', sqliteDB.length, 'lignes');
+    
+    // Debug: Vérifier que les données ont bien des valeurs Debit
+    const debitsFound = sqliteDB.filter(row => (row['Debit (USD)'] || 0) > 0);
+    console.log('🔍 [SQL] Nombre de lignes avec Debit > 0:', debitsFound.length);
+    
+    if (debitsFound.length > 0) {
+        console.log('🔍 [SQL] Exemple de ligne avec Debit:', debitsFound[0]);
+        
+        // Trouver la plus grosse dépense pour validation
+        const maxDebit = debitsFound.reduce((max, row) => {
+            return (row['Debit (USD)'] || 0) > (max['Debit (USD)'] || 0) ? row : max;
         });
+        console.log('🔍 [SQL] Plus grosse dépense détectée:', `$${maxDebit['Debit (USD)']} - "${maxDebit.Description}" le ${maxDebit.Date}`);
+        
+        // Valider qu'on trouve bien la dépense de 42960
+        const utilityPayment = debitsFound.find(row => 
+            (row['Debit (USD)'] || 0) > 40000 && 
+            row.Description && 
+            row.Description.toLowerCase().includes('utility')
+        );
+        if (utilityPayment) {
+            console.log('✅ [SQL] VALIDATION: Utility Bill Payment $42,960 trouvé:', utilityPayment);
+        } else {
+            console.log('❌ [SQL] WARNING: Utility Bill Payment $42,960 NON trouvé');
+        }
     }
     
-    // Pattern: "montant < X"
-    const lessPattern = /(\w+)\s*<\s*([\d.]+)/;
-    const lessMatch = queryLower.match(lessPattern);
-    if (lessMatch) {
-        const field = lessMatch[1];
-        const value = parseFloat(lessMatch[2]);
-        results = results.filter(row => {
-            const val = findFieldValue(row, field);
-            return val < value;
-        });
+    // ÉTAPE 3: Exécuter la requête SQL
+    const results = executeSQLiteQuery(sqliteDB, sqlQuery);
+    console.log('🔍 [SQL] Résultats trouvés:', results.length);
+    
+    if (results.length === 0 && query.includes('depense')) {
+        console.log('❌ [SQL] PROBLÈME: Aucun résultat pour une requête de dépenses');
+        console.log('❌ [SQL] Debug manuel - Recherche directe des dépenses:');
+        const manualDebits = sqliteDB
+            .filter(row => (row['Debit (USD)'] || 0) > 0)
+            .sort((a, b) => (b['Debit (USD)'] || 0) - (a['Debit (USD)'] || 0));
+        console.log('❌ [SQL] Dépenses trouvées manuellement:', manualDebits.length);
+        if (manualDebits.length > 0) {
+            console.log('❌ [SQL] Plus grosse dépense manuelle:', manualDebits[0]);
+            // Retourner la plus grosse dépense trouvée manuellement
+            return [{
+                Date: manualDebits[0].Date,
+                Description: manualDebits[0].Description,
+                Debit_USD: manualDebits[0]['Debit (USD)'],
+                Credit_USD: manualDebits[0]['Credit (USD)'],
+                Balance_USD: manualDebits[0]['Balance (USD)'],
+                _source: 'manual_fallback'
+            }];
+        }
     }
     
-    // Pattern: "contient X"
-    const containsPattern = /contient\s+"([^"]+)"/;
-    const containsMatch = queryLower.match(containsPattern);
-    if (containsMatch) {
-        const searchTerm = containsMatch[1];
-        results = results.filter(row => {
-            return Object.values(row).some(val => 
-                String(val).toLowerCase().includes(searchTerm)
-            );
-        });
-    }
+    console.log('🔍 [SQL] === FIN TRADUCTION SQL ===');
     
-    // Pattern: "entre X et Y"
-    const betweenPattern = /(\w+)\s+entre\s+([\d.]+)\s+et\s+([\d.]+)/;
-    const betweenMatch = queryLower.match(betweenPattern);
-    if (betweenMatch) {
-        const field = betweenMatch[1];
-        const min = parseFloat(betweenMatch[2]);
-        const max = parseFloat(betweenMatch[3]);
-        results = results.filter(row => {
-            const val = findFieldValue(row, field);
-            return val >= min && val <= max;
-        });
-    }
-    
-    console.log('🔍 [DEBUG] Résultats trouvés:', results.length);
     return results;
 }
 
 /**
- * Trouve la valeur d'un champ dans une ligne
+ * Traduit les questions en SQL selon les patterns courants
  */
-function findFieldValue(row, fieldName) {
-    // Chercher le champ de manière flexible
-    for (const key in row) {
-        if (key.toLowerCase().includes(fieldName.toLowerCase())) {
-            const val = parseFloat(row[key]);
-            return isNaN(val) ? 0 : val;
-        }
+function translateToSQL(naturalQuery) {
+    const query = naturalQuery.toLowerCase();
+    
+    console.log('📝 [SQL TRANSLATOR] Analyse de la question:', query);
+    
+    // Pattern: Plus grosse dépense
+    if (query.includes('plus grosse') && (query.includes('dépense') || query.includes('depense'))) {
+        const sql = `
+            SELECT Date, Description, [Debit (USD)] as Debit, [Credit (USD)] as Credit, [Balance (USD)] as Balance 
+            FROM transactions 
+            WHERE [Debit (USD)] IS NOT NULL 
+            AND [Debit (USD)] > 0 
+            ORDER BY CAST([Debit (USD)] AS DECIMAL) DESC 
+            LIMIT 1
+        `;
+        console.log('📝 [SQL] Pattern détecté: PLUS_GROSSE_DEPENSE');
+        console.log('📝 [SQL] SQL généré:', sql.trim());
+        return sql.trim();
     }
-    return 0;
+    
+    // Pattern: Plus gros revenu  
+    if (query.includes('plus gros') && (query.includes('revenu') || query.includes('credit'))) {
+        const sql = `
+            SELECT Date, Description, [Debit (USD)] as Debit, [Credit (USD)] as Credit, [Balance (USD)] as Balance 
+            FROM transactions 
+            WHERE [Credit (USD)] IS NOT NULL 
+            AND [Credit (USD)] > 0 
+            ORDER BY CAST([Credit (USD)] AS DECIMAL) DESC 
+            LIMIT 1
+        `;
+        console.log('📝 [SQL] Pattern détecté: PLUS_GROS_REVENU');
+        return sql.trim();
+    }
+    
+    // Pattern: Recherche par description ou mots-clés
+    if (query.includes('contient') || query.includes('description')) {
+        const searchTerm = query.split(' ').pop();
+        const sql = `
+            SELECT Date, Description, [Debit (USD)] as Debit_USD, [Credit (USD)] as Credit_USD, [Balance (USD)] as Balance_USD 
+            FROM transactions 
+            WHERE Description LIKE '%${searchTerm}%'
+            ORDER BY Date DESC
+        `;
+        console.log('📝 [SQL] ✅ Pattern détecté: RECHERCHE_DESCRIPTION');
+        console.log('📝 [SQL] 🔍 Recherche: Transactions contenant "' + searchTerm + '"');
+        console.log('📝 [SQL] 📋 SQL généré:', sql.trim());
+        return sql.trim();
+    }
+    
+    // Pattern: Dépenses supérieures à X montant
+    const greaterPattern = /(?:dépenses?|transactions?)\s*(?:supérieures?\s*à|>\s*)([\d,]+)/;
+    const greaterMatch = query.match(greaterPattern);
+    if (greaterMatch) {
+        const amount = parseFloat(greaterMatch[1].replace(/[,\s]/g, ''));
+        const sql = `
+            SELECT Date, Description, [Debit (USD)] as Debit_USD, [Credit (USD)] as Credit_USD, [Balance (USD)] as Balance_USD 
+            FROM transactions 
+            WHERE [Debit (USD)] IS NOT NULL 
+            AND CAST([Debit (USD)] AS DECIMAL) > ${amount} 
+            ORDER BY CAST([Debit (USD)] AS DECIMAL) DESC
+        `;
+        console.log('📝 [SQL] ✅ Pattern détecté: DEPENSES_SUPERIEURES_A');
+        console.log(`📝 [SQL] 🔍 Recherche: Dépenses > $${amount}`);
+        console.log('📝 [SQL] 📋 SQL généré:', sql.trim());
+        return sql.trim();
+    }
+    
+    // Pattern par défaut: toutes les données
+    console.log('📝 [SQL] ⚠️ Aucun pattern spécifique détecté - Requête générique');
+    const sql = `
+        SELECT Date, Description, [Debit (USD)] as Debit_USD, [Credit (USD)] as Credit_USD, [Balance (USD)] as Balance_USD 
+        FROM transactions 
+        ORDER BY Date DESC 
+        LIMIT 10
+    `;
+    console.log('📝 [SQL] 📋 SQL généré (défaut):', sql.trim());
+    return sql.trim();
 }
+
+/**
+ * Crée une table SQLite temporaire en mémoire à partir des données CSV
+ * Format attendu: Date,Description,Debit (USD),Credit (USD),Balance (USD)
+ */
+function createInMemorySQLiteTable(data) {
+    console.log('⚡ [SQLITE] === CRÉATION TABLE EN MÉMOIRE ===');
+    console.log('⚡ [SQLITE] Nombre de lignes à traiter:', data.length);
+    
+    if (!data || data.length === 0) {
+        console.log('❌ [SQLITE] Aucune donnée fournie');
+        return [];
+    }
+    
+    // Vérifier le format des données
+    const firstRow = data[0];
+    const expectedColumns = ['Date', 'Description', 'Debit (USD)', 'Credit (USD)', 'Balance (USD)'];
+    
+    console.log('⚡ [SQLITE] Structure de la première ligne:');
+    console.log('⚡ [SQLITE] Colonnes trouvées:', Object.keys(firstRow));
+    console.log('⚡ [SQLITE] Colonnes attendues:', expectedColumns);
+    
+    // Vérification de la conformité
+    const hasAllColumns = expectedColumns.every(col => firstRow.hasOwnProperty(col));
+    if (!hasAllColumns) {
+        console.log('⚠️ [SQLITE] ATTENTION: Format non conforme détecté');
+        console.log('⚠️ [SQLITE] Colonnes manquantes:', expectedColumns.filter(col => !firstRow.hasOwnProperty(col)));
+    } else {
+        console.log('✅ [SQLITE] Format CSV conforme détecté');
+    }
+    
+    // Simuler la création de table SQLite
+    const sqliteTable = [];
+    
+    data.forEach((row, index) => {
+        const debitValue = row['Debit (USD)'] || '';
+        const creditValue = row['Credit (USD)'] || '';
+        const balanceValue = row['Balance (USD)'] || '';
+        
+        // Parser les valeurs numériques
+        const debit = debitValue ? parseFloat(debitValue.toString().replace(/[,\s]/g, '')) : 0;
+        const credit = creditValue ? parseFloat(creditValue.toString().replace(/[,\s]/g, '')) : 0;
+        const balance = balanceValue ? parseFloat(balanceValue.toString().replace(/[,\s]/g, '')) : 0;
+        
+        const sqlRow = {
+            Date: row['Date'] || '',
+            Description: row['Description'] || '',
+            'Debit (USD)': debit,
+            'Credit (USD)': credit,
+            'Balance (USD)': balance,
+            _rowIndex: index + 1
+        };
+        
+        sqliteTable.push(sqlRow);
+        
+        // Log détaillé pour quelques lignes
+        if (index < 3 || debit > 1000 || credit > 1000) {
+            console.log(`⚡ [SQLITE] Ligne ${index + 1}: "${row['Description']}" → Debit: $${debit}, Credit: $${credit}, Balance: $${balance}`);
+        }
+    });
+    
+    console.log('⚡ [SQLITE] ✅ Table créée avec', sqliteTable.length, 'lignes');
+    console.log('⚡ [SQLITE] === FIN CRÉATION TABLE ===');
+    
+    return sqliteTable;
+}
+
+/**
+ * Exécute une requête SQL simulée sur les données
+ */
+function executeSQLiteQuery(sqliteDB, sqlQuery) {
+    console.log('🔥 [SQL EXEC] === EXÉCUTION REQUÊTE SQL ===');
+    console.log('🔥 [SQL EXEC] Table disponible:', sqliteDB.length, 'lignes');
+    console.log('🔥 [SQL EXEC] Requête à exécuter:');
+    console.log('🔥 [SQL EXEC]', sqlQuery);
+    
+    if (!sqliteDB || sqliteDB.length === 0) {
+        console.log('❌ [SQL EXEC] Table vide ou inexistante');
+        return [];
+    }
+    
+    const query = sqlQuery.toLowerCase();
+    const results = [];
+    
+    try {
+        // Pattern: Plus grosse dépense (ORDER BY Debit DESC LIMIT 1)
+        if (query.includes('order by cast([debit (usd)] as decimal) desc') && query.includes('limit 1')) {
+            console.log('🔥 [SQL EXEC] 🎯 Exécution: RECHERCHE PLUS GROSSE DÉPENSE');
+            
+            let maxDebit = 0;
+            let maxRow = null;
+            
+            sqliteDB.forEach((row, index) => {
+                const debit = row['Debit (USD)'] || 0;
+                if (debit > maxDebit) {
+                    maxDebit = debit;
+                    maxRow = {
+                        Date: row.Date,
+                        Description: row.Description,
+                        Debit_USD: debit,
+                        Credit_USD: row['Credit (USD)'],
+                        Balance_USD: row['Balance (USD)'],
+                        _rowIndex: row._rowIndex
+                    };
+                    console.log(`⚡ [SQLITE] ✅ NOUVELLE MAX TROUVÉE: $${debit} USD - "${row.Description}"`);
+                }
+            });
+            
+            if (maxRow) {
+                results.push(maxRow);
+                console.log(`🔥 [SQL EXEC] 🎉 RÉSULTAT: Plus grosse dépense = $${maxDebit} ("${maxRow.Description}")`);
+            }
+        }
+        
+        // Pattern: Plus gros revenu (ORDER BY Credit DESC LIMIT 1)
+        else if (query.includes('order by cast([credit (usd)] as decimal) desc') && query.includes('limit 1')) {
+            console.log('🔥 [SQL EXEC] 🎯 Exécution: RECHERCHE PLUS GROS REVENU');
+            
+            let maxCredit = 0;
+            let maxRow = null;
+            
+            sqliteDB.forEach((row, index) => {
+                const credit = row['Credit (USD)'] || 0;
+                if (credit > maxCredit) {
+                    maxCredit = credit;
+                    maxRow = {
+                        Date: row.Date,
+                        Description: row.Description,
+                        Debit_USD: row['Debit (USD)'],
+                        Credit_USD: credit,
+                        Balance_USD: row['Balance (USD)'],
+                        _rowIndex: row._rowIndex
+                    };
+                    console.log(`⚡ [SQLITE] ✅ NOUVEAU MAX TROUVÉ: $${credit} USD - "${row.Description}"`);
+                }
+            });
+            
+            if (maxRow) {
+                results.push(maxRow);
+                console.log(`🔥 [SQL EXEC] 🎉 RÉSULTAT: Plus gros revenu = $${maxCredit} ("${maxRow.Description}")`);
+            }
+        }
+        
+        // Pattern: Total des dépenses (SUM)
+        else if (query.includes('sum(cast([debit (usd)] as decimal))')) {
+            console.log('🔥 [SQL EXEC] 🎯 Exécution: CALCUL TOTAL DÉPENSES');
+            
+            let totalDebits = 0;
+            let countDebits = 0;
+            
+            sqliteDB.forEach(row => {
+                const debit = row['Debit (USD)'] || 0;
+                if (debit > 0) {
+                    totalDebits += debit;
+                    countDebits++;
+                }
+            });
+            
+            results.push({
+                Total_Depenses: totalDebits,
+                Nombre_Transactions_Debit: countDebits
+            });
+            
+            console.log(`🔥 [SQL EXEC] 🎉 RÉSULTAT: Total dépenses = $${totalDebits} (${countDebits} transactions)`);
+        }
+        
+        // Pattern: Total des revenus (SUM Credit)
+        else if (query.includes('sum(cast([credit (usd)] as decimal))')) {
+            console.log('🔥 [SQL EXEC] 🎯 Exécution: CALCUL TOTAL REVENUS');
+            
+            let totalCredits = 0;
+            let countCredits = 0;
+            
+            sqliteDB.forEach(row => {
+                const credit = row['Credit (USD)'] || 0;
+                if (credit > 0) {
+                    totalCredits += credit;
+                    countCredits++;
+                }
+            });
+            
+            results.push({
+                Total_Revenus: totalCredits,
+                Nombre_Transactions_Credit: countCredits
+            });
+            
+            console.log(`🔥 [SQL EXEC] 🎉 RÉSULTAT: Total revenus = $${totalCredits} (${countCredits} transactions)`);
+        }
+        
+        // Pattern: Balance actuelle (dernière ligne)
+        else if (query.includes('order by date desc') && query.includes('limit 1')) {
+            console.log('🔥 [SQL EXEC] 🎯 Exécution: RECHERCHE BALANCE ACTUELLE');
+            
+            // Trouver la dernière transaction (par index)
+            const lastRow = sqliteDB[sqliteDB.length - 1];
+            if (lastRow) {
+                results.push({
+                    Date: lastRow.Date,
+                    Description: lastRow.Description,
+                    Balance_USD: lastRow['Balance (USD)']
+                });
+                console.log(`🔥 [SQL EXEC] 🎉 RÉSULTAT: Balance actuelle = $${lastRow['Balance (USD)']} (${lastRow.Date})`);
+            }
+        }
+        
+        // Pattern: Top X dépenses
+        else if (query.includes('order by cast([debit (usd)] as decimal) desc') && query.includes('limit ')) {
+            const limitMatch = query.match(/limit (\d+)/);
+            const limit = limitMatch ? parseInt(limitMatch[1]) : 5;
+            
+            console.log(`🔥 [SQL EXEC] 🎯 Exécution: RECHERCHE TOP ${limit} DÉPENSES`);
+            
+            const sortedDebits = sqliteDB
+                .filter(row => (row['Debit (USD)'] || 0) > 0)
+                .sort((a, b) => (b['Debit (USD)'] || 0) - (a['Debit (USD)'] || 0))
+                .slice(0, limit);
+            
+            sortedDebits.forEach((row, index) => {
+                const result = {
+                    Date: row.Date,
+                    Description: row.Description,
+                    Debit_USD: row['Debit (USD)'],
+                    Balance_USD: row['Balance (USD)'],
+                    _rank: index + 1
+                };
+                results.push(result);
+                console.log(`⚡ [SQLITE] #${index + 1}: $${row['Debit (USD)']} - "${row.Description}"`);
+            });
+            
+            console.log(`🔥 [SQL EXEC] 🎉 RÉSULTAT: ${sortedDebits.length} dépenses trouvées`);
+        }
+        
+        // Requête générique (LIMIT 10)
+        else {
+            console.log('🔥 [SQL EXEC] 🎯 Exécution: REQUÊTE GÉNÉRIQUE (LIMIT 10)');
+            
+            const recentRows = sqliteDB.slice(-10).reverse();
+            recentRows.forEach(row => {
+                results.push({
+                    Date: row.Date,
+                    Description: row.Description,
+                    Debit_USD: row['Debit (USD)'],
+                    Credit_USD: row['Credit (USD)'],
+                    Balance_USD: row['Balance (USD)']
+                });
+            });
+            
+            console.log(`🔥 [SQL EXEC] 🎉 RÉSULTAT: ${results.length} lignes récentes retournées`);
+        }
+        
+    } catch (error) {
+        console.error('❌ [SQL EXEC] Erreur lors de l\'exécution:', error.message);
+        return [];
+    }
+    
+    console.log('🔥 [SQL EXEC] ✅ Exécution terminée -', results.length, 'résultats');
+    console.log('🔥 [SQL EXEC] === FIN EXÉCUTION ===');
+    
+    return results;
 
 /**
  * Détection automatique du Google Sheet avec debug
@@ -1456,6 +1942,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             hasAnalysis: !!appState.financialAnalysis,
                             hasReport: !!appState.reportData,
                             isProcessing: appState.isProcessing,
+                            navigationState: appState.navigationState,
                             syncStatus: {
                                 isActive: appState.driveSync.isActive,
                                 connectionStatus: appState.driveSync.connectionStatus,
@@ -1581,26 +2068,48 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     console.log('📨 [DEBUG] executeQuery demandé:', request.query);
                     
                     if (!appState.parsedData || !appState.parsedData.data) {
+                        console.log('❌ [DEBUG] Pas de données disponibles dans appState.parsedData');
                         sendResponse({
                             success: false,
                             error: 'Aucune donnée disponible. Chargez d\'abord un Google Sheet.'
                         });
                     } else {
+                        console.log('✅ [DEBUG] Données disponibles:', appState.parsedData.data.length, 'lignes');
+                        
                         try {
-                            // Convertir le langage naturel en filtre
+                            // ÉTAPE 1: Générer la requête SQL pour le debug
+                            const sqlQuery = translateToSQL(request.query);
+                            console.log('📝 [DEBUG] SQL Query générée:', sqlQuery);
+                            
+                            // ÉTAPE 2: Exécuter la requête
                             const results = executeNaturalQuery(request.query, appState.parsedData.data);
+                            console.log('📋 [DEBUG] Résultats de la requête:', results.length, 'éléments');
+                            
+                            if (results.length > 0) {
+                                console.log('📋 [DEBUG] Premier résultat:', results[0]);
+                            }
                             
                             sendResponse({
                                 success: true,
                                 results: results,
-                                sql: `SELECT * WHERE ${request.query}`,
-                                count: results.length
+                                sql: sqlQuery,
+                                count: results.length,
+                                debugInfo: {
+                                    dataAvailable: appState.parsedData.data.length,
+                                    query: request.query,
+                                    sqlGenerated: sqlQuery
+                                }
                             });
                         } catch (error) {
-                            console.error('❌ [DEBUG] Erreur requête:', error);
+                            console.error('❌ [DEBUG] Erreur lors de l\'exécution de la requête:', error);
                             sendResponse({
                                 success: false,
-                                error: error.message
+                                error: error.message,
+                                debugInfo: {
+                                    dataAvailable: appState.parsedData?.data?.length || 0,
+                                    query: request.query,
+                                    errorStack: error.stack
+                                }
                             });
                         }
                     }
@@ -1662,6 +2171,78 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     }
                     break;
                     
+                case 'getLastAnalysis':
+                    console.log('📨 [DEBUG] getLastAnalysis demandé pour explications de calculs');
+                    if (appState.financialAnalysis && appState.parsedData) {
+                        sendResponse({
+                            success: true,
+                            analysis: {
+                                totals: appState.financialAnalysis.totals,
+                                grouped: appState.financialAnalysis.grouped,
+                                transactions: appState.parsedData.data || [],
+                                importantCells: appState.cellReferences
+                            }
+                        });
+                    } else {
+                        sendResponse({
+                            success: false,
+                            error: 'Aucune analyse disponible'
+                        });
+                    }
+                    break;
+                    
+                case 'navigationStarted':
+                    console.log('📍 [DEBUG] Navigation commencée:', request.url);
+                    appState.isProcessing = true;
+                    appState.navigationState = {
+                        isNavigating: true,
+                        startTime: request.timestamp,
+                        currentUrl: request.url,
+                        previousUrl: request.previousUrl
+                    };
+                    
+                    // Réinitialiser les données si on change de sheet
+                    if (request.url !== request.previousUrl) {
+                        const newSheetId = extractSheetIdFromUrl(request.url);
+                        if (newSheetId && newSheetId !== appState.currentSheetId) {
+                            console.log('📍 [DEBUG] Nouveau Google Sheet détecté:', newSheetId);
+                            appState.currentSheetId = newSheetId;
+                            appState.currentSheetData = null;
+                            appState.parsedData = null;
+                            appState.financialAnalysis = null;
+                            appState.reportData = null;
+                            appState.cellReferences = null;
+                        }
+                    }
+                    
+                    sendResponse({ success: true });
+                    break;
+                    
+                case 'navigationCompleted':
+                    console.log('📍 [DEBUG] Navigation terminée:', request.url);
+                    appState.navigationState.isNavigating = false;
+                    appState.navigationState.endTime = request.timestamp;
+                    appState.navigationState.currentUrl = request.url;
+                    
+                    // Démarrer automatiquement l'analyse si on est sur un nouveau sheet
+                    if (appState.currentSheetId && !appState.currentSheetData) {
+                        console.log('📍 [DEBUG] Démarrage auto-analyse pour nouveau sheet:', appState.currentSheetId);
+                        // Démarrer l'analyse de manière asynchrone
+                        fetchAndAnalyzeSheetData(appState.currentSheetId, true).then(() => {
+                            console.log('📍 [DEBUG] Auto-analyse terminée');
+                            appState.isProcessing = false;
+                        }).catch(error => {
+                            console.error('❌ [DEBUG] Erreur auto-analyse:', error);
+                            appState.isProcessing = false;
+                        });
+                    } else {
+                        console.log('📍 [DEBUG] Pas besoin d\'analyse - données déjà présentes');
+                        appState.isProcessing = false;
+                    }
+                    
+                    sendResponse({ success: true });
+                    break;
+                    
                 default:
                     console.log('📨 [DEBUG] Action non reconnue:', request.action);
                     sendResponse({
@@ -1681,14 +2262,111 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // Réponse asynchrone
 });
 
-// Initialisation
-console.log('🚀 [DEBUG] Background Service Worker démarré avec debug');
-console.log('🤖 [DEBUG] Configuration:', {
-    hasApiKey: !!CONFIG.API_KEY,
-    hasGoogleApiKey: !!CONFIG.GOOGLE_API_KEY,
-    model: CONFIG.MODEL
+// Initialisation améliorée avec réinitialisation complète
+function initializeSystem() {
+    console.log('🚀 [DEBUG] Initialisation complète du système...');
+    console.log('🤖 [DEBUG] Configuration:', {
+        hasApiKey: !!CONFIG.API_KEY,
+        hasGoogleApiKey: !!CONFIG.GOOGLE_API_KEY,
+        model: CONFIG.MODEL
+    });
+    
+    // Réinitialiser complètement l'état
+    resetAppState();
+    
+    // Vérifier immédiatement l'onglet actif
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+        if (tabs && tabs[0]) {
+            console.log('🔍 [DEBUG] Vérification initiale de l\'onglet actif...');
+            checkAndExtractSheetId(tabs[0]);
+        }
+    });
+    
+    console.log('✅ [DEBUG] Système initialisé et prêt');
+}
+
+// Fonction pour réinitialiser l'état complet
+function resetAppState() {
+    console.log('🔄 [DEBUG] Réinitialisation complète de l\'état...');
+    
+    // Arrêter toute synchronisation active
+    if (appState.driveSync.isActive) {
+        DriveSyncAgent.stopSync('system_reset');
+    }
+    
+    // Clear tous les timeouts
+    if (appState.driveSync.syncInterval) {
+        clearTimeout(appState.driveSync.syncInterval);
+    }
+    if (appState.driveSync.debounceTimeout) {
+        clearTimeout(appState.driveSync.debounceTimeout);
+    }
+    
+    // Réinitialiser l'état complet
+    appState.currentSheetId = null;
+    appState.currentSheetData = null;
+    appState.parsedData = null;
+    appState.financialAnalysis = null;
+    appState.reportData = null;
+    appState.cellReferences = null;
+    appState.isProcessing = false;
+    appState.lastUpdate = null;
+    
+    // Réinitialiser l'état de navigation
+    appState.navigationState = {
+        isNavigating: false,
+        startTime: null,
+        endTime: null,
+        currentUrl: null,
+        previousUrl: null
+    };
+    
+    // Réinitialiser l'état de synchronisation
+    appState.driveSync = {
+        isActive: false,
+        lastDataHash: null,
+        syncInterval: null,
+        debounceTimeout: null,
+        syncFrequency: 30000,
+        debounceDelay: 2000,
+        retryCount: 0,
+        maxRetries: 5,
+        errorCount: 0,
+        lastSyncTimestamp: null,
+        connectionStatus: 'disconnected',
+        adaptivePolling: {
+            enabled: true,
+            minInterval: 10000,
+            maxInterval: 300000,
+            currentInterval: 30000,
+            changeDetectionCount: 0,
+            noChangeCount: 0,
+            adjustmentFactor: 1.5
+        },
+        metrics: {
+            totalSyncAttempts: 0,
+            successfulSyncs: 0,
+            failedSyncs: 0,
+            changesDetected: 0,
+            lastError: null,
+            avgResponseTime: 0,
+            responseTimes: []
+        }
+    };
+    
+    console.log('✅ [DEBUG] État réinitialisé avec succès');
+}
+
+// Initialiser au démarrage
+initializeSystem();
+
+// Réinitialiser quand l'extension se réveille
+chrome.runtime.onStartup.addListener(() => {
+    console.log('🔄 [DEBUG] Extension redémarrée, réinitialisation...');
+    initializeSystem();
 });
 
-setTimeout(() => {
-    console.log('🔍 [DEBUG] Système prêt pour l\'analyse automatique');
-}, 1000);
+chrome.runtime.onInstalled.addListener(() => {
+    console.log('🔄 [DEBUG] Extension installée/mise à jour, réinitialisation...');
+    initializeSystem();
+});

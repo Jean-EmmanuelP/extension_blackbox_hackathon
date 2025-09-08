@@ -63,6 +63,32 @@
             <div class="auto-load-badge">AUTO</div>
         </div>
 
+        <!-- Loader -->
+        <div class="loader-container" id="loaderContainer" style="display: none;">
+            <div class="loader-content">
+                <div class="loader-spinner"></div>
+                <div class="loader-text">Chargement des données...</div>
+                <div class="loader-steps">
+                    <div class="loader-step" id="loaderStep1">
+                        <span class="step-icon">📊</span>
+                        <span class="step-text">Connexion au Google Sheet</span>
+                    </div>
+                    <div class="loader-step" id="loaderStep2">
+                        <span class="step-icon">🔍</span>
+                        <span class="step-text">Analyse des données</span>
+                    </div>
+                    <div class="loader-step" id="loaderStep3">
+                        <span class="step-icon">🤖</span>
+                        <span class="step-text">Génération des insights IA</span>
+                    </div>
+                    <div class="loader-step" id="loaderStep4">
+                        <span class="step-icon">📈</span>
+                        <span class="step-text">Préparation du rapport</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Dashboard Content -->
         <div class="dashboard-content" id="dashboardContent">
             <!-- Interface de chat améliorée -->
@@ -139,6 +165,7 @@
                     <button class="tab-btn" data-tab="profitability">📈 Rentabilité</button>
                     <button class="tab-btn" data-tab="cashflow">💵 Trésorerie</button>
                     <button class="tab-btn" data-tab="trends">📉 Tendances</button>
+                    <button class="tab-btn" data-tab="query">🔍 Requêtes</button>
                 </div>
                 
                 <div class="tabs-content">
@@ -170,6 +197,33 @@
                     <!-- Onglet Tendances -->
                     <div class="tab-panel" id="tab-trends">
                         <!-- Graphique de tendances amélioré -->
+                    </div>
+                    
+                    <!-- Onglet Query -->
+                    <div class="tab-panel" id="tab-query">
+                        <div class="query-interface">
+                            <div class="query-header">
+                                <h3>🔍 Interroger vos données</h3>
+                                <p>Posez des questions en langage naturel sur vos données financières</p>
+                            </div>
+                            
+                            <div class="query-suggestions">
+                                <button class="query-suggestion-chip" data-query="Quelle est ma plus grosse dépense ?">💸 Plus grosse dépense</button>
+                                <button class="query-suggestion-chip" data-query="Quel est mon profit ce mois ?">💰 Profit mensuel</button>
+                                <button class="query-suggestion-chip" data-query="Montre-moi le top 5 des dépenses">📊 Top 5 dépenses</button>
+                                <button class="query-suggestion-chip" data-query="Quelle est ma tendance de revenus ?">📈 Tendance revenus</button>
+                                <button class="query-suggestion-chip" data-query="Combien je dépense en salaires ?">👥 Masse salariale</button>
+                            </div>
+                            
+                            <div class="query-input-wrapper">
+                                <input type="text" id="queryTabInput" class="query-tab-input" placeholder="Ex: Quel est mon burn rate mensuel ?">
+                                <button id="queryTabBtn" class="query-tab-btn">Analyser</button>
+                            </div>
+                            
+                            <div id="queryTabResults" class="query-tab-results" style="display: none;">
+                                <!-- Les résultats s'afficheront ici -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

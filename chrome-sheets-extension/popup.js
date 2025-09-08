@@ -2,6 +2,7 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Financial Analytics v2 - Détection automatique activée avec Agent 5 HoverInsights');
+    console.log('🔄 Initialisation complète de l\'interface...');
 
     // État de l'application
     const appState = {
@@ -24,6 +25,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Éléments DOM
     const elements = {
+        // Loader
+        loaderContainer: document.getElementById('loaderContainer'),
+        loaderStep1: document.getElementById('loaderStep1'),
+        loaderStep2: document.getElementById('loaderStep2'),
+        loaderStep3: document.getElementById('loaderStep3'),
+        loaderStep4: document.getElementById('loaderStep4'),
+        
         // Header
         refreshBtn: document.getElementById('refreshBtn'),
         
@@ -101,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
             tooltip.className = 'smart-tooltip';
             tooltip.style.cssText = `
                 position: absolute;
-                background: linear-gradient(135deg, #1e1e20 0%, #2a2a2d 100%);
+                background: #111111;
                 color: white;
                 padding: 14px 18px;
                 border-radius: 12px;
@@ -2443,7 +2451,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     /**
-     * Exécute une requête depuis la barre de recherche principale
+     * Exécute une requête depuis la barre de recherche principale avec animation de réflexion
      */
     async function executeMainQuery() {
         const query = elements.mainQueryInput?.value.trim();
@@ -2452,16 +2460,126 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('🔍 Requête principale:', query);
         elements.mainSearchBtn.disabled = true;
         
-        // Afficher la réponse
+        // Afficher l'animation de réflexion progressive
         elements.mainSearchResponse.style.display = 'block';
-        elements.mainSearchResponse.innerHTML = '<div class="loading">Analyse en cours...</div>';
+        elements.mainSearchResponse.innerHTML = `
+            <div class="ai-thinking-process">
+                <div class="thinking-header">
+                    <span class="thinking-icon">🤖</span>
+                    <div>
+                        <div class="thinking-title">Analyse en cours...</div>
+                        <div class="thinking-subtitle" style="color: #999999; font-size: 12px;">Réflexion de l'IA étape par étape</div>
+                    </div>
+                </div>
+                <div class="thinking-steps">
+                    <div class="thinking-step" id="step-1">
+                        <span class="step-icon">🔍</span>
+                        <span class="step-text">Compréhension de votre question...</span>
+                        <span class="step-status" id="status-1">⏳</span>
+                    </div>
+                    <div class="thinking-step" id="step-2">
+                        <span class="step-icon">📊</span>
+                        <span class="step-text">Extraction des données pertinentes...</span>
+                        <span class="step-status" id="status-2">⏳</span>
+                    </div>
+                    <div class="thinking-step" id="step-3">
+                        <span class="step-icon">🧠</span>
+                        <span class="step-text">Calcul des métriques...</span>
+                        <span class="step-status" id="status-3">⏳</span>
+                    </div>
+                    <div class="thinking-step" id="step-4">
+                        <span class="step-icon">💡</span>
+                        <span class="step-text">Génération des insights...</span>
+                        <span class="step-status" id="status-4">⏳</span>
+                    </div>
+                </div>
+            </div>
+            <style>
+                .ai-thinking-process {
+                    padding: 20px;
+                    background: #0a0a0a;
+                    border: 1px solid #333333;
+                    border-radius: 12px;
+                    animation: fadeIn 0.5s ease;
+                }
+                .thinking-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin-bottom: 20px;
+                    padding-bottom: 16px;
+                    border-bottom: 1px solid #333333;
+                }
+                .thinking-icon {
+                    font-size: 32px;
+                    animation: pulse 1.5s infinite;
+                }
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.1); opacity: 0.8; }
+                }
+                .thinking-title {
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #ffffff;
+                }
+                .thinking-steps {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+                .thinking-step {
+                    display: flex;
+                    align-items: center;
+                    padding: 12px;
+                    background: #111111;
+                    border: 1px solid #333333;
+                    border-radius: 8px;
+                    transition: all 0.3s;
+                }
+                .thinking-step.active {
+                    background: #1a1a1a;
+                    border-color: #ffffff;
+                    transform: translateX(8px);
+                }
+                .thinking-step.completed {
+                    opacity: 0.7;
+                    background: #0a0a0a;
+                }
+                .step-icon {
+                    font-size: 20px;
+                    margin-right: 12px;
+                }
+                .step-text {
+                    flex: 1;
+                    font-size: 14px;
+                    color: #e0e0e0;
+                }
+                .step-status {
+                    font-size: 20px;
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            </style>
+        `;
+        
+        // Animer les étapes
+        await animateStep(1, 500);
+        await animateStep(2, 800);
+        await animateStep(3, 800);
+        await animateStep(4, 800);
         
         try {
             const response = await analyzeQuestionWithAgents(query);
-            displayMainSearchResponse(response);
+            // Attendre un peu avant d'afficher le résultat pour l'effet
+            setTimeout(() => {
+                displayMainSearchResponse(response);
+            }, 500);
         } catch (error) {
             console.error('Erreur:', error);
-            elements.mainSearchResponse.innerHTML = '<div class="error">Erreur lors de l\'analyse</div>';
+            elements.mainSearchResponse.innerHTML = '<div class="error" style="color: #ff6666;">Erreur lors de l\'analyse</div>';
         } finally {
             elements.mainSearchBtn.disabled = false;
         }
@@ -2471,7 +2589,7 @@ document.addEventListener('DOMContentLoaded', function() {
      * Affiche la réponse de la recherche principale
      */
     function displayMainSearchResponse(response) {
-        let html = '<div class="search-response-card" style="padding: 16px; background: #f8f9fa; border-radius: 8px; margin: 16px 24px;">';
+        let html = '<div class="search-response-card" style="padding: 16px; background: #1a1a1a; border: 1px solid #333333; border-radius: 8px; margin: 16px 24px;">';
         
         if (response.title) {
             html += `<h3 style="margin-top: 0;">${response.title}</h3>`;
@@ -2479,10 +2597,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (response.mainMetric) {
             html += `
-                <div style="text-align: center; padding: 16px; background: white; border-radius: 8px; margin: 12px 0;">
-                    <div style="color: #5f6368; font-size: 12px;">${response.mainMetric.label}</div>
-                    <div style="font-size: 32px; font-weight: 600; color: #202124; margin: 8px 0;">${response.mainMetric.value}</div>
-                    <div style="color: #5f6368; font-size: 13px;">${response.mainMetric.subtitle}</div>
+                <div style="text-align: center; padding: 16px; background: #0a0a0a; border: 1px solid #333333; border-radius: 8px; margin: 12px 0;">
+                    <div style="color: #999999; font-size: 12px;">${response.mainMetric.label}</div>
+                    <div style="font-size: 32px; font-weight: 600; color: #ffffff; margin: 8px 0;">${response.mainMetric.value}</div>
+                    <div style="color: #999999; font-size: 13px;">${response.mainMetric.subtitle}</div>
                 </div>
             `;
         }
@@ -2491,9 +2609,9 @@ document.addEventListener('DOMContentLoaded', function() {
             html += '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 12px 0;">';
             response.details.forEach(detail => {
                 html += `
-                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: white; border-radius: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: #1a1a1a; border: 1px solid #333333; border-radius: 6px;">
                         <span>${detail.icon}</span>
-                        <span style="color: #5f6368; font-size: 12px;">${detail.label}:</span>
+                        <span style="color: #999999; font-size: 12px;">${detail.label}:</span>
                         <span style="font-weight: 500; font-size: 13px;">${detail.value}</span>
                     </div>
                 `;
@@ -2502,7 +2620,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (response.insights) {
-            html += '<div style="margin-top: 12px; padding: 12px; background: #e8f0fe; border-radius: 6px;">';
+            html += '<div style="margin-top: 12px; padding: 12px; background: #0a0a0a; border: 1px solid #333333; border-radius: 6px;">';
             response.insights.forEach(insight => {
                 html += `<div style="margin: 4px 0; font-size: 13px;">${insight}</div>`;
             });
@@ -2563,14 +2681,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h3>💰 Analyse approfondie des revenus</h3>
                 
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 20px 0;">
-                    <div style="background: #f8f9fa; padding: 16px; border-radius: 8px;">
+                    <div style="background: #1a1a1a; padding: 16px; border-radius: 8px; border: 1px solid #333333;">
                         <h4 style="margin-top: 0;">Vue d'ensemble</h4>
                         <div>Total: <strong>$${revenue.toFixed(0)}</strong></div>
                         <div>Sources: <strong>${sources.length}</strong></div>
                         <div>Moyenne/source: <strong>$${(revenue / sources.length).toFixed(0)}</strong></div>
                     </div>
                     
-                    <div style="background: #f8f9fa; padding: 16px; border-radius: 8px;">
+                    <div style="background: #1a1a1a; padding: 16px; border-radius: 8px; border: 1px solid #333333;">
                         <h4 style="margin-top: 0;">Top 5 sources</h4>
                         ${sources.slice(0, 5).map(([name, data]) => `
                             <div style="display: flex; justify-content: space-between; margin: 4px 0;">
@@ -2580,11 +2698,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         `).join('')}
                     </div>
                     
-                    <div style="background: #f8f9fa; padding: 16px; border-radius: 8px;">
+                    <div style="background: #1a1a1a; padding: 16px; border-radius: 8px; border: 1px solid #333333;">
                         <h4 style="margin-top: 0;">Concentration</h4>
                         <div>Top source: <strong>${((sources[0]?.[1].entries/revenue)*100).toFixed(1)}%</strong></div>
                         <div>Top 3: <strong>${((sources.slice(0,3).reduce((sum, [,d]) => sum + d.entries, 0)/revenue)*100).toFixed(1)}%</strong></div>
-                        <div style="margin-top: 8px; color: ${sources[0] && (sources[0][1].entries/revenue) > 0.5 ? '#ea4335' : '#34a853'}">
+                        <div style="margin-top: 8px; color: ${sources[0] && (sources[0][1].entries/revenue) > 0.5 ? '#ffffff' : '#999999'}">
                             ${sources[0] && (sources[0][1].entries/revenue) > 0.5 ? '⚠️ Risque élevé' : '✅ Bonne diversification'}
                         </div>
                     </div>
@@ -2607,7 +2725,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h3>💸 Analyse approfondie des dépenses</h3>
                 
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 20px 0;">
-                    <div style="background: #f8f9fa; padding: 16px; border-radius: 8px;">
+                    <div style="background: #1a1a1a; padding: 16px; border-radius: 8px; border: 1px solid #333333;">
                         <h4 style="margin-top: 0;">Répartition</h4>
                         ${categories.slice(0, 5).map(([name, data]) => `
                             <div style="display: flex; justify-content: space-between; margin: 4px 0;">
@@ -2617,7 +2735,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         `).join('')}
                     </div>
                     
-                    <div style="background: #fff3cd; padding: 16px; border-radius: 8px;">
+                    <div style="background: #1a1a1a; padding: 16px; border-radius: 8px; border: 1px solid #ffffff;">
                         <h4 style="margin-top: 0;">💡 Opportunités d'économie</h4>
                         <div>Réduction 10% top 3: <strong>$${(categories.slice(0,3).reduce((sum, [,d]) => sum + d.exits*0.1, 0)).toFixed(0)}</strong></div>
                         <div>Élimination non-essentiels: <strong>$${(expenses*0.15).toFixed(0)}</strong></div>
@@ -2642,7 +2760,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h3>📈 Analyse de rentabilité</h3>
                 
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 20px 0;">
-                    <div style="background: ${profit > 0 ? '#d4edda' : '#f8d7da'}; padding: 16px; border-radius: 8px; text-align: center;">
+                    <div style="background: ${profit > 0 ? '#1a1a1a' : '#0a0a0a'}; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid ${profit > 0 ? '#ffffff' : '#666666'};">
                         <h4 style="margin-top: 0;">Profit Net</h4>
                         <div style="font-size: 28px; font-weight: 600;">$${profit.toFixed(0)}</div>
                         <div>Marge: ${margin}%</div>
@@ -2655,11 +2773,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; text-align: center;">
                         <h4 style="margin-top: 0;">ROI</h4>
-                        <div style="font-size: 24px; font-weight: 600;">${((revenue/expenses - 1)*100).toFixed(1)}%</div>
+                        <div style="font-size: 24px; font-weight: 600;">${expenses > 0 ? ((revenue/expenses - 1)*100).toFixed(1) : '0'}%</div>
                     </div>
                 </div>
                 
-                <div style="background: #e8f0fe; padding: 16px; border-radius: 8px;">
+                <div style="background: #0a0a0a; padding: 16px; border-radius: 8px; border: 1px solid #333333;">
                     <h4 style="margin-top: 0;">Leviers d'amélioration</h4>
                     <div>✅ Augmentation prix 10%: Impact <strong>+$${(revenue*0.1).toFixed(0)}</strong> sur le profit</div>
                     <div>✅ Réduction coûts 15%: Impact <strong>+$${(expenses*0.15).toFixed(0)}</strong> sur le profit</div>
@@ -2683,7 +2801,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h3>💵 Analyse de trésorerie</h3>
                 
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 20px 0;">
-                    <div style="background: ${cashflow > 0 ? '#d4edda' : '#f8d7da'}; padding: 16px; border-radius: 8px; text-align: center;">
+                    <div style="background: ${cashflow > 0 ? '#1a1a1a' : '#0a0a0a'}; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid ${cashflow > 0 ? '#ffffff' : '#666666'};">
                         <h4 style="margin-top: 0;">Cash-flow</h4>
                         <div style="font-size: 24px; font-weight: 600;">$${cashflow.toFixed(0)}/mois</div>
                     </div>
@@ -2745,8 +2863,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     appState.sheetId = state.sheetId;
                     updateSheetInfo(state.sheetId);
                     
-                    // Si pas de données, déclencher le chargement automatique
-                    if (!state.hasData) {
+                    // Vérifier l'état de navigation
+                    if (state.navigationState?.isNavigating) {
+                        console.log('📍 Navigation en cours détectée');
+                        showNavigationLoadingState(state.navigationState);
+                    } else if (!state.hasData) {
                         console.log('🔄 Déclenchement du chargement automatique...');
                         showStatus('Chargement automatique...');
                         triggerAutoLoad();
@@ -2927,9 +3048,326 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'trends':
                 panel.innerHTML = generateTrendsAnalysis(reportData.chartData?.trend, analysis);
                 break;
+            case 'query':
+                // L'interface Query est déjà dans le HTML, on initialise juste les événements
+                initializeQueryTab();
+                break;
         }
     }
     
+    /**
+     * Initialise l'onglet Query
+     */
+    function initializeQueryTab() {
+        const queryInput = document.getElementById('queryTabInput');
+        const queryBtn = document.getElementById('queryTabBtn');
+        const queryResults = document.getElementById('queryTabResults');
+        const suggestionChips = document.querySelectorAll('.query-suggestion-chip');
+        
+        // Gestion du bouton Analyser
+        queryBtn?.addEventListener('click', async () => {
+            const query = queryInput.value.trim();
+            if (!query) return;
+            
+            queryBtn.disabled = true;
+            queryBtn.textContent = 'Analyse en cours...';
+            
+            try {
+                const response = await chrome.runtime.sendMessage({
+                    action: 'executeQuery',
+                    query: query
+                });
+                
+                if (response && response.success) {
+                    displayQueryResults(response.results, query);
+                } else {
+                    displayQueryError(response?.error || 'Erreur lors de l\'analyse');
+                }
+            } catch (error) {
+                displayQueryError(error.message);
+            } finally {
+                queryBtn.disabled = false;
+                queryBtn.textContent = 'Analyser';
+            }
+        });
+        
+        // Gestion des suggestions
+        suggestionChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                const query = chip.getAttribute('data-query');
+                queryInput.value = query;
+                queryBtn.click();
+            });
+        });
+        
+        // Gestion de la touche Enter
+        queryInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                queryBtn.click();
+            }
+        });
+    }
+    
+    /**
+     * Affiche les résultats d'une requête
+     */
+    function displayQueryResults(results, query) {
+        const queryResults = document.getElementById('queryTabResults');
+        if (!queryResults) return;
+        
+        // Analyse le type de requête pour personnaliser l'affichage
+        const analysis = appState.reportData?.rawAnalysis;
+        let html = '';
+        
+        if (query.toLowerCase().includes('grosse dépense') || query.toLowerCase().includes('biggest expense')) {
+            const topExpense = Object.entries(analysis?.grouped || {})
+                .filter(([_, data]) => data.exits > 0)
+                .sort((a, b) => b[1].exits - a[1].exits)[0];
+            
+            if (topExpense) {
+                html = `
+                    <div class="query-result-header">
+                        <span class="query-result-icon">💸</span>
+                        <h3 class="query-result-title">Plus Grosse Dépense Identifiée</h3>
+                    </div>
+                    <div class="query-result-metric">
+                        <div class="query-result-metric-label">Catégorie</div>
+                        <div class="query-result-metric-value">${topExpense[0]}</div>
+                        <div class="query-result-metric-label" style="margin-top: 10px;">Montant Total</div>
+                        <div class="query-result-metric-value clickable-metric" data-calculation-type="biggest_expense" data-value="$${topExpense[1].exits.toFixed(0)}" onclick="showCalculationExplanation('biggest_expense', '$${topExpense[1].exits.toFixed(0)}', this)" style="cursor: pointer; transition: all 0.2s ease; padding: 4px; border-radius: 4px;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'" onmouseout="this.style.backgroundColor='transparent'">$${topExpense[1].exits.toFixed(0)}</div>
+                        <div class="query-result-metric-label" style="margin-top: 10px;">Part du budget</div>
+                        <div class="query-result-metric-value">${((topExpense[1].exits / analysis.totals.exits) * 100).toFixed(1)}%</div>
+                    </div>
+                    <div class="query-result-details">
+                        <div class="query-detail-item">
+                            <span class="query-detail-icon">📊</span>
+                            <span class="query-detail-label">Nombre de transactions:</span>
+                            <span class="query-detail-value">${topExpense[1].count || 1}</span>
+                        </div>
+                        <div class="query-detail-item">
+                            <span class="query-detail-icon">💰</span>
+                            <span class="query-detail-label">Moyenne par transaction:</span>
+                            <span class="query-detail-value">$${(topExpense[1].exits / (topExpense[1].count || 1)).toFixed(0)}</span>
+                        </div>
+                        <div class="query-detail-item">
+                            <span class="query-detail-icon">📈</span>
+                            <span class="query-detail-label">Total des dépenses:</span>
+                            <span class="query-detail-value">$${analysis.totals.exits.toFixed(0)}</span>
+                        </div>
+                        <div class="query-detail-item">
+                            <span class="query-detail-icon">⚖️</span>
+                            <span class="query-detail-label">Ratio vs revenus:</span>
+                            <span class="query-detail-value">${((topExpense[1].exits / analysis.totals.entries) * 100).toFixed(1)}%</span>
+                        </div>
+                        <div class="query-detail-item">
+                            <span class="query-detail-icon">📉</span>
+                            <span class="query-detail-label">Impact sur marge:</span>
+                            <span class="query-detail-value">${((topExpense[1].exits / analysis.totals.entries) * 100).toFixed(1)} points</span>
+                        </div>
+                        <div class="query-detail-item">
+                            <span class="query-detail-icon">🎯</span>
+                            <span class="query-detail-label">Objectif réduction:</span>
+                            <span class="query-detail-value">$${(topExpense[1].exits * 0.15).toFixed(0)} (-15%)</span>
+                        </div>
+                    </div>
+                    <div class="query-result-insights">
+                        <div class="query-insight-item ${topExpense[1].exits > analysis.totals.exits * 0.3 ? 'warning' : 'success'}">
+                            ${topExpense[1].exits > analysis.totals.exits * 0.3 ? '⚠️ Cette dépense représente plus de 30% de votre budget' : '✅ Cette dépense est dans des proportions normales'}
+                        </div>
+                        <div class="query-insight-item">
+                            💡 Recommandation: ${topExpense[1].exits > analysis.totals.exits * 0.3 ? 'Négociez ce contrat ou cherchez des alternatives' : 'Continuez à surveiller cette dépense'}
+                        </div>
+                        <div class="query-insight-item">
+                            📌 Action: ${topExpense[1].exits > analysis.totals.exits * 0.3 ? 'Obtenir 3 devis concurrents ce mois' : 'Réviser annuellement'}
+                        </div>
+                    </div>
+                `;
+            }
+        } else if (query.toLowerCase().includes('profit')) {
+            const profit = (analysis?.totals?.entries || 0) - (analysis?.totals?.exits || 0);
+            const margin = analysis?.totals?.margin || 0;
+            const revenues = analysis?.totals?.entries || 0;
+            const expenses = analysis?.totals?.exits || 0;
+            
+            html = `
+                <div class="query-result-header">
+                    <span class="query-result-icon">💰</span>
+                    <h3 class="query-result-title">Analyse de Rentabilité</h3>
+                </div>
+                <div class="query-result-metric">
+                    <div class="query-result-metric-label">${profit >= 0 ? 'Profit Net' : 'Perte Nette'}</div>
+                    <div class="query-result-metric-value clickable-metric" data-calculation-type="profit" data-value="$${Math.abs(profit).toFixed(0)}" onclick="showCalculationExplanation('profit', '$${Math.abs(profit).toFixed(0)}', this)" style="cursor: pointer; transition: all 0.2s ease; padding: 4px; border-radius: 4px;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'" onmouseout="this.style.backgroundColor='transparent'">$${Math.abs(profit).toFixed(0)}</div>
+                    <div class="query-result-metric-label" style="margin-top: 10px;">Marge</div>
+                    <div class="query-result-metric-value">${margin}%</div>
+                </div>
+                <div class="query-result-details">
+                    <div class="query-detail-item">
+                        <span class="query-detail-icon">📈</span>
+                        <span class="query-detail-label">Total des revenus:</span>
+                        <span class="query-detail-value clickable-metric" data-calculation-type="total_revenues" data-value="$${revenues.toFixed(0)}" onclick="showCalculationExplanation('total_revenues', '$${revenues.toFixed(0)}', this)" style="cursor: pointer; transition: all 0.2s ease; padding: 2px 4px; border-radius: 3px;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'" onmouseout="this.style.backgroundColor='transparent'">$${revenues.toFixed(0)}</span>
+                    </div>
+                    <div class="query-detail-item">
+                        <span class="query-detail-icon">📉</span>
+                        <span class="query-detail-label">Total des dépenses:</span>
+                        <span class="query-detail-value clickable-metric" data-calculation-type="total_expenses" data-value="$${expenses.toFixed(0)}" onclick="showCalculationExplanation('total_expenses', '$${expenses.toFixed(0)}', this)" style="cursor: pointer; transition: all 0.2s ease; padding: 2px 4px; border-radius: 3px;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'" onmouseout="this.style.backgroundColor='transparent'">$${expenses.toFixed(0)}</span>
+                    </div>
+                    <div class="query-detail-item">
+                        <span class="query-detail-icon">⚖️</span>
+                        <span class="query-detail-label">Ratio revenus/dépenses:</span>
+                        <span class="query-detail-value">${expenses > 0 ? (revenues / expenses).toFixed(2) : 'N/A'}</span>
+                    </div>
+                </div>
+            `;
+        } else if (query.toLowerCase().includes('top 5')) {
+            const topExpenses = Object.entries(analysis?.grouped || {})
+                .filter(([_, data]) => data.exits > 0)
+                .sort((a, b) => b[1].exits - a[1].exits)
+                .slice(0, 5);
+            
+            html = `
+                <div class="query-result-header">
+                    <span class="query-result-icon">📊</span>
+                    <h3 class="query-result-title">Top 5 des Dépenses</h3>
+                </div>
+                <ul class="query-result-list">
+                    ${topExpenses.map(([category, data], index) => `
+                        <li class="query-result-item">
+                            <span>${index + 1}. ${category}</span>
+                            <strong>$${data.exits.toFixed(0)}</strong>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+        } else if (query.toLowerCase().includes('salaire') || query.toLowerCase().includes('salary')) {
+            const salaryData = analysis?.grouped?.['Salaires'] || analysis?.grouped?.['Salary'] || { exits: 0, count: 0 };
+            const totalExpenses = analysis?.totals?.exits || 1;
+            const totalRevenues = analysis?.totals?.entries || 1;
+            const salaryPercent = (salaryData.exits / totalExpenses * 100).toFixed(1);
+            const avgSalary = salaryData.count > 0 ? (salaryData.exits / salaryData.count).toFixed(0) : 0;
+            
+            html = `
+                <div class="query-result-header">
+                    <span class="query-result-icon">👥</span>
+                    <h3 class="query-result-title">Analyse de la Masse Salariale</h3>
+                </div>
+                <div class="query-result-metric">
+                    <div class="query-result-metric-label">Total Salaires</div>
+                    <div class="query-result-metric-value">$${salaryData.exits.toFixed(0)}</div>
+                    <div class="query-result-metric-label" style="margin-top: 10px;">Part des dépenses</div>
+                    <div class="query-result-metric-value">${salaryPercent}%</div>
+                </div>
+                <div class="query-result-details">
+                    <div class="query-detail-item">
+                        <span class="query-detail-icon">👤</span>
+                        <span class="query-detail-label">Nombre de transactions:</span>
+                        <span class="query-detail-value">${salaryData.count || 0}</span>
+                    </div>
+                    <div class="query-detail-item">
+                        <span class="query-detail-icon">💰</span>
+                        <span class="query-detail-label">Salaire moyen:</span>
+                        <span class="query-detail-value">$${avgSalary}</span>
+                    </div>
+                    <div class="query-detail-item">
+                        <span class="query-detail-icon">📊</span>
+                        <span class="query-detail-label">Part du budget:</span>
+                        <span class="query-detail-value">${salaryPercent}%</span>
+                    </div>
+                    <div class="query-detail-item">
+                        <span class="query-detail-icon">📈</span>
+                        <span class="query-detail-label">Ratio vs revenus:</span>
+                        <span class="query-detail-value">${((salaryData.exits / totalRevenues) * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="query-detail-item">
+                        <span class="query-detail-icon">🎯</span>
+                        <span class="query-detail-label">Benchmark industrie:</span>
+                        <span class="query-detail-value">35-45% du budget</span>
+                    </div>
+                    <div class="query-detail-item">
+                        <span class="query-detail-icon">💡</span>
+                        <span class="query-detail-label">Efficacité salariale:</span>
+                        <span class="query-detail-value">$${(totalRevenues / (salaryData.exits || 1)).toFixed(2)} généré par $ de salaire</span>
+                    </div>
+                </div>
+                <div class="query-result-insights">
+                    <div class="query-insight-item ${salaryPercent > 45 ? 'warning' : 'success'}">
+                        ${salaryPercent > 45 ? '⚠️ Masse salariale élevée (>45%)' : '✅ Masse salariale sous contrôle'}
+                    </div>
+                    <div class="query-insight-item ${(salaryData.exits / totalRevenues) > 0.5 ? 'warning' : 'success'}">
+                        ${(salaryData.exits / totalRevenues) > 0.5 ? '🔴 Les salaires dépassent 50% des revenus' : '✅ Ratio salaires/revenus sain'}
+                    </div>
+                    <div class="query-insight-item">
+                        💡 ${salaryPercent > 45 ? 'Considérez l\'automatisation ou l\'externalisation' : 'Continuez à optimiser la productivité'}
+                    </div>
+                </div>
+            `;
+        } else if (query.toLowerCase().includes('tendance') || query.toLowerCase().includes('trend')) {
+            const monthlyData = analysis?.monthlyData || {};
+            const months = Object.keys(monthlyData).sort();
+            let trendInfo = '';
+            
+            if (months.length >= 2) {
+                const lastMonth = monthlyData[months[months.length - 1]];
+                const prevMonth = monthlyData[months[months.length - 2]];
+                const growth = ((lastMonth.entries - prevMonth.entries) / prevMonth.entries * 100);
+                
+                html = `
+                    <div class="query-result-header">
+                        <span class="query-result-icon">📈</span>
+                        <h3 class="query-result-title">Analyse des Tendances</h3>
+                    </div>
+                    <div class="query-result-metric">
+                        <div class="query-result-metric-label">Croissance MoM</div>
+                        <div class="query-result-metric-value">${growth > 0 ? '+' : ''}${growth.toFixed(1)}%</div>
+                        <div class="query-result-metric-label" style="margin-top: 10px;">Tendance</div>
+                        <div class="query-result-metric-value">${growth > 0 ? '📈 Croissance' : '📉 Décroissance'}</div>
+                    </div>
+                    <div class="query-result-content">
+                        <p>Évolution sur ${months.length} mois analysés</p>
+                    </div>
+                `;
+            }
+        } else {
+            // Affichage générique pour les autres requêtes
+            html = `
+                <div class="query-result-header">
+                    <span class="query-result-icon">🔍</span>
+                    <h3 class="query-result-title">Résultats de l'Analyse</h3>
+                </div>
+                <div class="query-result-content">
+                    <p>${results.length} résultats trouvés pour votre requête.</p>
+                </div>
+            `;
+        }
+        
+        queryResults.innerHTML = html;
+        queryResults.style.display = 'block';
+    }
+    
+    /**
+     * Affiche une erreur de requête
+     */
+    function displayQueryError(error) {
+        const queryResults = document.getElementById('queryTabResults');
+        if (!queryResults) return;
+        
+        queryResults.innerHTML = `
+            <div class="query-result-header">
+                <span class="query-result-icon">⚠️</span>
+                <h3 class="query-result-title">Erreur</h3>
+            </div>
+            <div class="query-result-content">
+                <p>${error}</p>
+                <p style="margin-top: 10px;">Essayez une question comme :</p>
+                <ul style="margin-top: 10px; padding-left: 20px;">
+                    <li>Quelle est ma plus grosse dépense ?</li>
+                    <li>Quel est mon profit ce mois ?</li>
+                    <li>Montre-moi le top 5 des dépenses</li>
+                </ul>
+            </div>
+        `;
+        queryResults.style.display = 'block';
+    }
+
     /**
      * Génère le contenu de vue d'ensemble
      */
@@ -2945,7 +3383,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="overview-metrics">
                         <div>Revenus: <strong>$${revenue.toFixed(0)}</strong></div>
                         <div>Dépenses: <strong>$${expenses.toFixed(0)}</strong></div>
-                        <div>Profit: <strong style="color: ${profit > 0 ? '#34a853' : '#ea4335'}">$${profit.toFixed(0)}</strong></div>
+                        <div>Profit: <strong style="color: ${profit > 0 ? '#ffffff' : '#999999'}">$${profit.toFixed(0)}</strong></div>
                         <div>Marge: <strong>${analysis.totals?.margin || 0}%</strong></div>
                     </div>
                 </div>
@@ -2955,8 +3393,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="overview-metrics">
                         <div>Burn rate: <strong>$${((expenses - revenue) / 30).toFixed(0)}/jour</strong></div>
                         <div>Runway: <strong>${Math.floor((metrics?.cashAtBank?.value || 0) / Math.max(1, expenses - revenue))} mois</strong></div>
-                        <div>ROI: <strong>${((revenue / expenses - 1) * 100).toFixed(1)}%</strong></div>
-                        <div>Efficacité: <strong>${(revenue / expenses).toFixed(2)}x</strong></div>
+                        <div>ROI: <strong>${expenses > 0 ? ((revenue / expenses - 1) * 100).toFixed(1) : '0'}%</strong></div>
+                        <div>Efficacité: <strong>${expenses > 0 ? (revenue / expenses).toFixed(2) : '0'}x</strong></div>
                     </div>
                 </div>
             </div>
@@ -3008,8 +3446,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const maxIndex = revenue.indexOf(maxRevenue);
             const minIndex = revenue.indexOf(minRevenue);
             
-            insights.push(`📊 Pic de revenus: ${trendData.labels?.[maxIndex]} ($${maxRevenue.toFixed(0)})`);
-            insights.push(`📉 Creux de revenus: ${trendData.labels?.[minIndex]} ($${minRevenue.toFixed(0)})`);
+            insights.push(`📊 <span style="background: #1a1a1a; padding: 4px 8px; border-radius: 4px; border: 1px solid #ffffff;">Pic de revenus</span>: ${trendData.labels?.[maxIndex]} ($${maxRevenue.toFixed(0)})`);
+            insights.push(`📉 <span style="background: #0a0a0a; padding: 4px 8px; border-radius: 4px; border: 1px solid #666666;">Creux de revenus</span>: ${trendData.labels?.[minIndex]} ($${minRevenue.toFixed(0)})`);
             
             if (revenueGrowth > 20) {
                 insights.push('🚀 Croissance forte - Capitaliser sur ce momentum');
@@ -3452,7 +3890,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         display: false
                     },
                     tooltip: {
-                        backgroundColor: '#202124',
+                        backgroundColor: '#ffffff',
+                        titleColor: '#000000',
+                        bodyColor: '#000000',
                         callbacks: {
                             label: function(context) {
                                 const label = context.label || '';
@@ -3526,7 +3966,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     },
                     tooltip: {
-                        backgroundColor: '#202124',
+                        backgroundColor: '#ffffff',
+                        titleColor: '#000000',
+                        bodyColor: '#000000',
                         callbacks: {
                             label: function(context) {
                                 return `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
@@ -3603,7 +4045,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (urgentActions.length > 0) {
             insightsHTML += `
                 <div class="insight-section urgent">
-                    <h4 style="color: #ea4335; margin-bottom: 8px;">⚠️ Actions Urgentes</h4>
+                    <h4 style="color: #ffffff; margin-bottom: 8px;">⚠️ Actions Urgentes</h4>
                     ${urgentActions.map(action => `
                         <div class="insight-card urgent-action" data-tooltip="smart">
                             <div class="insight-text">${action}</div>
@@ -3617,7 +4059,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (priorities.length > 0) {
             insightsHTML += `
                 <div class="insight-section priorities">
-                    <h4 style="color: #fbbc04; margin-bottom: 8px;">🎯 Priorités Cette Semaine</h4>
+                    <h4 style="color: #ffffff; margin-bottom: 8px;">🎯 Priorités Cette Semaine</h4>
                     ${priorities.map(priority => `
                         <div class="insight-card priority-action" data-tooltip="smart">
                             <div class="insight-text">${priority}</div>
@@ -3631,7 +4073,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (normalActions.length > 0) {
             insightsHTML += `
                 <div class="insight-section actions">
-                    <h4 style="color: #4285f4; margin-bottom: 8px;">💡 Actions Recommandées</h4>
+                    <h4 style="color: #ffffff; margin-bottom: 8px;">💡 Actions Recommandées</h4>
                     ${normalActions.slice(0, 5).map(action => `
                         <div class="insight-card normal-action" data-tooltip="smart">
                             <div class="insight-text">${action}</div>
@@ -3645,7 +4087,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (optimizations.length > 0) {
             insightsHTML += `
                 <div class="insight-section metrics">
-                    <h4 style="color: #34a853; margin-bottom: 8px;">📊 Analyse Financière</h4>
+                    <h4 style="color: #ffffff; margin-bottom: 8px;">📊 Analyse Financière</h4>
                     ${optimizations.slice(0, 3).map(metric => `
                         <div class="insight-card metric-insight" data-tooltip="smart">
                             <div class="insight-text">${metric}</div>
@@ -3666,19 +4108,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             .insight-card.urgent-action {
                 background: rgba(234, 67, 53, 0.1);
-                border-left: 3px solid #ea4335;
+                border-left: 3px solid #ffffff;
             }
             .insight-card.priority-action {
                 background: rgba(251, 188, 4, 0.1);
-                border-left: 3px solid #fbbc04;
+                border-left: 3px solid #cccccc;
             }
             .insight-card.normal-action {
                 background: rgba(66, 133, 244, 0.1);
-                border-left: 3px solid #4285f4;
+                border-left: 3px solid #999999;
             }
             .insight-card.metric-insight {
                 background: rgba(52, 168, 83, 0.05);
-                border-left: 3px solid #34a853;
+                border-left: 3px solid #666666;
             }
         `;
         if (!document.head.querySelector('#insight-styles')) {
@@ -3873,7 +4315,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <style>
                 .thinking-interface {
                     padding: 20px;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    background: #111111;
                     border-radius: 12px;
                     color: white;
                 }
@@ -3904,12 +4346,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     display: flex;
                     align-items: center;
                     padding: 12px;
-                    background: rgba(255, 255, 255, 0.1);
+                    background: #1a1a1a;
                     border-radius: 8px;
                     transition: all 0.3s;
                 }
                 .thinking-step.active {
-                    background: rgba(255, 255, 255, 0.2);
+                    background: #333333;
                     transform: translateX(8px);
                 }
                 .thinking-step.completed {
@@ -3976,16 +4418,40 @@ document.addEventListener('DOMContentLoaded', function() {
         const grouped = analysis.grouped || {};
         
         // Agent 1: Comprendre l'intention
+        console.log('🔍 [DEBUG] Question posée:', q);
         const intent = detectIntent(q);
-        console.log('🎯 Intent détecté:', intent);
+        console.log('🎯 [DEBUG] Intent détecté:', intent);
+        
+        // DÉBUG SPÉCIAL pour "explique-moi l'excel"
+        if (q.includes('explique')) {
+            console.log('🚀 [DEBUG] QUESTION "EXPLIQUE" DÉTECTÉE!');
+            console.log('🚀 [DEBUG] Intent final:', intent);
+        }
         
         // Agent 2: Extraire les données pertinentes
         const data = extractRelevantData(intent, analysis, grouped);
-        console.log('📊 Données extraites:', data);
+        console.log('📊 [DEBUG] Données extraites pour intent "' + intent + '":', data);
+        
+        if (intent === 'explain_excel') {
+            console.log('🚀 [DEBUG] EXPLAIN_EXCEL - Revenus réels:', analysis.totals?.entries);
+            console.log('🚀 [DEBUG] EXPLAIN_EXCEL - Dépenses réelles:', analysis.totals?.exits);
+        }
         
         // Agent 3: Générer la réponse
-        const response = generateSmartResponse(intent, data, analysis);
-        console.log('✨ Réponse générée:', response);
+        let response = generateSmartResponse(intent, data, analysis);
+        console.log('✨ [DEBUG] Réponse générée pour intent "' + intent + '":', response);
+        
+        // Agent 4: Améliorer la réponse avec encadrement des cellules
+        response = enhanceResponseWithCellHighlighting(response, intent, analysis);
+        
+        if (intent === 'explain_excel') {
+            console.log('🚀 [DEBUG] RÉPONSE EXPLAIN_EXCEL:', {
+                title: response.title,
+                mainMetric: response.mainMetric,
+                detailsCount: response.details?.length || 0,
+                insightsCount: response.insights?.length || 0
+            });
+        }
         
         return response;
     }
@@ -3994,22 +4460,25 @@ document.addEventListener('DOMContentLoaded', function() {
      * Détecte l'intention de la question
      */
     function detectIntent(question) {
+        const q = question.toLowerCase();
         const intents = {
-            'biggest_expense': ['plus grosse dépense', 'plus grande dépense', 'dépense principale', 'coûte le plus'],
-            'profit': ['bénéfice', 'profit', 'gain', 'rentabilité'],
-            'margin': ['marge', 'margin', 'pourcentage de profit'],
-            'salaries': ['salaire', 'salary', 'paie', 'payroll', 'employé'],
-            'top_expenses': ['top', 'principales dépenses', 'trois dépenses', 'classement'],
-            'evolution': ['évolution', 'tendance', 'progression', 'mois par mois'],
-            'revenue': ['revenu', 'chiffre d\'affaires', 'vente', 'entrée'],
-            'expenses': ['dépense totale', 'coût total', 'sortie totale'],
+            'explain_excel': ['explique', 'analyse', 'résume', 'dis-moi', 'qu\'est-ce que', 'comment va', 'état de', 'présente', 'raconte'],
+            'biggest_expense': ['plus grosse dépense', 'plus grande dépense', 'dépense principale', 'coûte le plus', 'plus cher'],
+            'profit': ['bénéfice', 'profit', 'gain', 'rentabilité', 'résultat net'],
+            'margin': ['marge', 'margin', 'pourcentage de profit', 'rentabilité'],
+            'salaries': ['salaire', 'salary', 'paie', 'payroll', 'employé', 'rémunération'],
+            'top_expenses': ['top', 'principales dépenses', 'trois dépenses', 'classement', 'liste des'],
+            'evolution': ['évolution', 'tendance', 'progression', 'mois par mois', 'chronologie'],
+            'revenue': ['revenu', 'chiffre d\'affaires', 'vente', 'entrée', 'recette'],
+            'expenses': ['dépense totale', 'coût total', 'sortie totale', 'charges'],
             'specific_category': ['combien', 'montant', 'total pour'],
-            'comparison': ['comparer', 'différence', 'versus', 'vs'],
-            'forecast': ['prévision', 'projection', 'futur', 'prochains mois']
+            'comparison': ['comparer', 'différence', 'versus', 'vs', 'contraste'],
+            'forecast': ['prévision', 'projection', 'futur', 'prochains mois'],
+            'health_check': ['santé', 'comment ça va', 'situation', 'bilan', 'état financier']
         };
         
         for (const [intent, keywords] of Object.entries(intents)) {
-            if (keywords.some(keyword => question.includes(keyword))) {
+            if (keywords.some(keyword => q.includes(keyword))) {
                 return intent;
             }
         }
@@ -4022,10 +4491,28 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function extractRelevantData(intent, analysis, grouped) {
         switch (intent) {
+            case 'explain_excel':
+                // Pour "Explique-moi l'excel", retourner toutes les données
+                return {
+                    analysis: analysis,
+                    grouped: grouped,
+                    totals: analysis.totals,
+                    categories: Object.entries(grouped),
+                    transactionCount: analysis.totals?.transactionCount || 0
+                };
+                
             case 'biggest_expense':
-                return Object.entries(grouped)
-                    .filter(([_, data]) => data.exits > 0)
-                    .sort((a, b) => b[1].exits - a[1].exits)[0];
+                // Retourner la VRAIE plus grosse dépense (transaction individuelle)
+                if (analysis.biggestExpense && analysis.biggestExpense.amount > 0) {
+                    return ['Transaction', {
+                        exits: analysis.biggestExpense.amount,
+                        count: 1,
+                        description: analysis.biggestExpense.description,
+                        date: analysis.biggestExpense.date,
+                        rowIndex: analysis.biggestExpense.rowIndex
+                    }];
+                }
+                return null;
                     
             case 'profit':
                 return {
@@ -4064,6 +4551,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         .sort((a, b) => b[1].exits - a[1].exits)
                 };
                 
+            case 'health_check':
+                return {
+                    analysis: analysis,
+                    totals: analysis.totals,
+                    grouped: grouped
+                };
+                
             default:
                 return analysis;
         }
@@ -4073,11 +4567,86 @@ document.addEventListener('DOMContentLoaded', function() {
      * Génère une réponse intelligente avec données contextuelles enrichies
      */
     function generateSmartResponse(intent, data, analysis) {
-        // Enrichir la réponse avec des données contextuelles
+        // Utiliser les VRAIES données de l'Excel, pas des données mockées
         const totalRevenue = analysis.totals?.entries || 0;
         const totalExpenses = analysis.totals?.exits || 0;
         const profitMargin = analysis.totals?.margin || 0;
         const profit = totalRevenue - totalExpenses;
+        const transactionCount = analysis.totals?.transactionCount || 0;
+        const margin = totalRevenue > 0 ? ((profit / totalRevenue) * 100).toFixed(1) : 0;
+        
+        // Pour "Explique-moi l'excel" - ANALYSE COMPLÈTE AVEC VRAIES DONNÉES
+        if (intent === 'explain_excel') {
+            const categories = Object.entries(analysis.grouped || {});
+            const topExpenses = categories
+                .filter(([_, d]) => d.exits > 0)
+                .sort((a, b) => b[1].exits - a[1].exits)
+                .slice(0, 3);
+            const topRevenues = categories
+                .filter(([_, d]) => d.entries > 0)
+                .sort((a, b) => b[1].entries - a[1].entries)
+                .slice(0, 3);
+                
+            const efficiency = totalExpenses > 0 ? (totalRevenue / totalExpenses) : 0;
+            const burnRate = totalExpenses - totalRevenue;
+            const avgTransactionValue = transactionCount > 0 ? (totalRevenue + totalExpenses) / transactionCount : 0;
+            
+            return {
+                type: 'detailed',
+                title: '🤖 Analyse IA complète de votre fichier Excel',
+                mainMetric: {
+                    label: 'État financier général',
+                    value: profit > 0 ? '✅ ENTREPRISE RENTABLE' : '❌ ENTREPRISE EN PERTE',
+                    subtitle: `Profit: $${profit.toFixed(0)} | Marge: ${margin}% | ${transactionCount} transactions`
+                },
+                details: [
+                    { icon: '💰', label: 'Total Revenus', value: `$${totalRevenue.toFixed(0)}` },
+                    { icon: '💸', label: 'Total Dépenses', value: `$${totalExpenses.toFixed(0)}` },
+                    { icon: '⚖️', label: 'Efficacité', value: `${efficiency.toFixed(2)}x` },
+                    { icon: '📊', label: 'Catégories actives', value: `${categories.length}` },
+                    { icon: '💳', label: 'Valeur moy. transaction', value: `$${avgTransactionValue.toFixed(0)}` },
+                    { icon: burnRate > 0 ? '🔥' : '💚', label: burnRate > 0 ? 'Burn rate mensuel' : 'Cash flow positif', value: burnRate > 0 ? `$${burnRate.toFixed(0)}/mois` : `+$${Math.abs(burnRate).toFixed(0)}/mois` }
+                ],
+                insights: [
+                    `🎯 **Top dépense**: "${topExpenses[0]?.[0] || 'Aucune'}" représente $${(topExpenses[0]?.[1]?.exits || 0).toFixed(0)} (${topExpenses[0] && totalExpenses > 0 ? ((topExpenses[0][1].exits / totalExpenses) * 100).toFixed(0) : 0}% du total)`,
+                    `💎 **Top revenu**: "${topRevenues[0]?.[0] || 'Aucun'}" génère $${(topRevenues[0]?.[1]?.entries || 0).toFixed(0)} (${topRevenues[0] && totalRevenue > 0 ? ((topRevenues[0][1].entries / totalRevenue) * 100).toFixed(0) : 0}% du total)`,
+                    profit > 0 ? 
+                        `✅ **Santé**: Excellente! Vous générez $${profit.toFixed(0)} de bénéfice avec ${margin}% de marge. ${efficiency > 2 ? 'Très efficace!' : efficiency > 1.5 ? 'Bonne efficacité' : 'Efficacité à améliorer'}` :
+                        `🚨 **Alerte**: Perte de $${Math.abs(profit).toFixed(0)}. Réduisez les dépenses de ${totalExpenses > 0 ? ((Math.abs(profit) / totalExpenses) * 100).toFixed(0) : 0}% ou augmentez les revenus de ${totalRevenue > 0 ? ((Math.abs(profit) / totalRevenue) * 100).toFixed(0) : 0}% pour l'équilibre.`,
+                    `📈 **Performance**: Ratio R/D de ${efficiency.toFixed(2)}x ${efficiency >= 2 ? '(Excellent!)' : efficiency >= 1.5 ? '(Bon)' : efficiency >= 1.1 ? '(Correct)' : '(À améliorer)'}`,
+                    `🔍 **Volume**: ${transactionCount} transactions analysées. ${transactionCount > 200 ? 'Volume élevé - automatisation recommandée' : transactionCount > 50 ? 'Volume modéré - suivi manuel possible' : 'Faible volume - gestion manuelle adaptée'}`
+                ]
+            };
+        }
+        
+        // Pour health_check
+        if (intent === 'health_check') {
+            const healthScore = margin > 25 ? 'Excellente' : 
+                               margin > 15 ? 'Bonne' :
+                               margin > 5 ? 'Correcte' :
+                               margin > 0 ? 'Fragile' : 'Critique';
+            const healthColor = margin > 15 ? '🟢' : margin > 5 ? '🟡' : '🔴';
+            
+            return {
+                type: 'detailed',
+                title: `${healthColor} Bilan de santé financière`,
+                mainMetric: {
+                    label: 'Score de santé global',
+                    value: healthScore,
+                    subtitle: `Marge: ${margin}% | Profit: $${profit.toFixed(0)}`
+                },
+                details: [
+                    { icon: '💰', label: 'Revenus', value: `$${totalRevenue.toFixed(0)}` },
+                    { icon: '💸', label: 'Dépenses', value: `$${totalExpenses.toFixed(0)}` },
+                    { icon: profit > 0 ? '📈' : '📉', label: 'Résultat', value: `$${profit.toFixed(0)}` }
+                ],
+                insights: [
+                    profit > 0 ? '✅ Votre entreprise est rentable' : '❌ Votre entreprise perd de l\'argent',
+                    `📊 Marge de ${margin}% ${margin > 20 ? '(Très bonne)' : margin > 10 ? '(Correcte)' : '(À améliorer)'}`,
+                    totalExpenses > 0 ? `⚖️ Efficacité: ${(totalRevenue/totalExpenses).toFixed(2)}x` : '⚖️ Pas de dépenses détectées'
+                ]
+            };
+        }
         
         switch (intent) {
             case 'biggest_expense':
@@ -4090,28 +4659,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 const [category, expenseData] = data;
-                const percent = ((expenseData.exits / analysis.totals.exits) * 100).toFixed(1);
+                const percent = ((expenseData.exits / totalExpenses) * 100).toFixed(1);
+                const ratioVsRevenues = ((expenseData.exits / totalRevenue) * 100).toFixed(1);
+                
+                // C'est maintenant une transaction individuelle, pas une catégorie
+                const isIndividualTransaction = expenseData.description && expenseData.date;
                 
                 return {
                     type: 'detailed',
                     title: '💸 Votre Plus Grosse Dépense',
                     mainMetric: {
-                        label: category,
+                        label: isIndividualTransaction ? expenseData.description : category,
                         value: `$${expenseData.exits.toFixed(0)}`,
-                        subtitle: `${percent}% du total des dépenses`
+                        subtitle: isIndividualTransaction ? 
+                            `Transaction du ${expenseData.date} (${percent}% du total)` : 
+                            `${percent}% du total des dépenses`
                     },
                     details: [
-                        { icon: '📊', label: 'Nombre de transactions', value: expenseData.count },
-                        { icon: '💰', label: 'Moyenne par transaction', value: `$${(expenseData.exits / expenseData.count).toFixed(0)}` },
-                        { icon: '📈', label: 'Total des dépenses', value: `$${totalExpenses.toFixed(0)}` },
-                        { icon: '⚖️', label: 'Ratio vs revenus', value: `${((expenseData.exits / totalRevenue) * 100).toFixed(1)}%` },
-                        { icon: '📉', label: 'Impact sur marge', value: `${((expenseData.exits / totalRevenue) * 100).toFixed(1)} points` },
-                        { icon: '🎯', label: 'Objectif réduction', value: `$${(expenseData.exits * 0.15).toFixed(0)} (-15%)` }
+                        { icon: '📄', label: 'Description', value: expenseData.description || category },
+                        { icon: '💰', label: 'Montant', value: `$${expenseData.exits.toFixed(0)}` },
+                        { icon: '📅', label: 'Date', value: expenseData.date || 'Non spécifiée' },
+                        { icon: '📈', label: 'Part du budget total', value: `${percent}%` },
+                        { icon: '⚖️', label: 'Part des revenus', value: `${ratioVsRevenues}%` }
                     ],
                     insights: [
-                        percent > 30 ? '⚠️ Cette dépense représente plus de 30% de votre budget total' : '✅ Cette dépense est dans des proportions normales',
-                        percent > 30 ? '💡 Recommandation: Négociez ce contrat ou cherchez des alternatives' : '💡 Continuez à surveiller cette dépense',
-                        `📍 Actions suggérées: ${percent > 30 ? 'Obtenir 3 devis concurrents, Renégocier les termes' : 'Maintenir le suivi mensuel'}`
+                        `💸 Cette transaction de $${expenseData.exits.toFixed(0)} est votre plus grosse dépense individuelle`,
+                        `📊 Elle représente ${percent}% de toutes vos dépenses ($${totalExpenses.toFixed(0)})`,
+                        `⚖️ Cette seule dépense consomme ${ratioVsRevenues}% de vos revenus totaux`
                     ],
                     chart: {
                         type: 'pie',
@@ -4125,8 +4699,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             case 'profit':
                 const isProfit = profit > 0;
-                const monthlyBurn = totalExpenses - totalRevenue;
-                const runway = monthlyBurn > 0 ? Math.floor((analysis.totals?.cashAtBank || 0) / monthlyBurn) : 999;
+                const marginPercent = totalRevenue > 0 ? ((profit / totalRevenue) * 100).toFixed(1) : 0;
                 
                 return {
                     type: 'detailed',
@@ -4134,30 +4707,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     mainMetric: {
                         label: isProfit ? 'Bénéfice Net' : 'Perte Nette',
                         value: `$${Math.abs(profit).toFixed(0)}`,
-                        subtitle: `Marge: ${profitMargin}%`
+                        subtitle: `Calcul: $${totalRevenue.toFixed(0)} - $${totalExpenses.toFixed(0)} = $${profit.toFixed(0)}`
                     },
                     details: [
-                        { icon: '📈', label: 'Revenus totaux', value: `$${totalRevenue.toFixed(0)}` },
-                        { icon: '📉', label: 'Dépenses totales', value: `$${totalExpenses.toFixed(0)}` },
-                        { icon: '⚖️', label: 'Ratio revenus/dépenses', value: (totalRevenue / totalExpenses).toFixed(2) },
-                        { icon: '💹', label: 'Seuil de rentabilité', value: `$${(totalExpenses / (1 - profitMargin/100)).toFixed(0)}` },
-                        { icon: '🏃', label: 'Runway', value: runway > 100 ? 'Illimité' : `${runway} mois` },
-                        { icon: '📊', label: 'Croissance nécessaire', value: isProfit ? 'Maintenir' : `+${((totalExpenses - totalRevenue) / totalRevenue * 100).toFixed(0)}%` }
+                        { icon: '📈', label: 'Total revenus', value: `$${totalRevenue.toFixed(0)}` },
+                        { icon: '📉', label: 'Total dépenses', value: `$${totalExpenses.toFixed(0)}` },
+                        { icon: '⚖️', label: 'Différence', value: `$${profit.toFixed(0)}` },
+                        { icon: '📊', label: 'Marge', value: `${marginPercent}%` },
+                        { icon: '💳', label: 'Nombre de transactions', value: transactionCount.toString() }
                     ],
                     insights: [
-                        isProfit ? '✅ Votre entreprise est rentable' : '🔴 Attention: Vous êtes en perte',
-                        profitMargin > 20 ? '💪 Marge saine supérieure à 20%' : '⚠️ Marge faible, optimisation nécessaire',
-                        isProfit ? '📈 Continuez à optimiser vos coûts' : '🚨 Actions urgentes requises pour revenir à la rentabilité',
-                        runway < 6 && !isProfit ? '🚨 URGENT: Runway critique < 6 mois' : runway < 12 ? '⚠️ Attention: Runway limité' : '✅ Runway confortable'
-                    ],
-                    actions: isProfit ? 
-                        ['Augmenter les prix de 5-10%', 'Développer nouveaux produits', 'Optimiser les coûts variables'] :
-                        ['🔴 Réduire immédiatement les dépenses de 20%', '🔴 Augmenter les prix de 15%', '🔴 Accélérer les encaissements']
+                        `💰 Revenus: $${totalRevenue.toFixed(0)} (somme de toutes les entrées)`,
+                        `💸 Dépenses: $${totalExpenses.toFixed(0)} (somme de toutes les sorties)`,
+                        `📊 Résultat: ${isProfit ? 'Bénéfice' : 'Perte'} de $${Math.abs(profit).toFixed(0)}`
+                    ]
                 };
                 
             case 'salaries':
-                const salaryPercent = data.exits > 0 ? ((data.exits / totalExpenses) * 100).toFixed(1) : 0;
+                const salaryPercent = data.exits > 0 && totalExpenses > 0 ? ((data.exits / totalExpenses) * 100).toFixed(1) : 0;
                 const avgSalary = data.count > 0 ? (data.exits / data.count).toFixed(0) : 0;
+                const revenuePercent = totalRevenue > 0 ? ((data.exits / totalRevenue) * 100).toFixed(1) : 0;
                 
                 return {
                     type: 'detailed',
@@ -4168,47 +4737,33 @@ document.addEventListener('DOMContentLoaded', function() {
                         subtitle: `${salaryPercent}% des dépenses totales`
                     },
                     details: [
-                        { icon: '👤', label: 'Nombre de transactions', value: data.count },
-                        { icon: '💰', label: 'Salaire moyen', value: `$${avgSalary}` },
-                        { icon: '📊', label: 'Part du budget', value: `${salaryPercent}%` },
-                        { icon: '📈', label: 'Ratio vs revenus', value: `${((data.exits / totalRevenue) * 100).toFixed(1)}%` },
-                        { icon: '🎯', label: 'Benchmark industrie', value: '35-45% du budget' },
-                        { icon: '💡', label: 'Efficacité salariale', value: `$${(totalRevenue / data.exits).toFixed(2)} généré par $ de salaire` }
+                        { icon: '👤', label: 'Nombre de transactions', value: data.count.toString() },
+                        { icon: '💰', label: 'Montant total', value: `$${data.exits.toFixed(0)}` },
+                        { icon: '📊', label: 'Pourcentage des dépenses', value: `${salaryPercent}%` },
+                        { icon: '📈', label: 'Pourcentage des revenus', value: `${revenuePercent}%` },
+                        { icon: '💵', label: 'Moyenne par transaction', value: `$${avgSalary}` }
                     ],
                     insights: [
-                        salaryPercent > 45 ? '⚠️ Masse salariale élevée (>45%)' : '✅ Masse salariale sous contrôle',
-                        (data.exits / totalRevenue) > 0.5 ? '🔴 Les salaires dépassent 50% des revenus' : '✅ Ratio salaires/revenus sain',
-                        salaryPercent > 45 ? '💡 Considérez l\'automatisation ou l\'externalisation' : '💡 Continuez à optimiser la productivité'
+                        `👥 Total des salaires: $${data.exits.toFixed(0)} sur ${data.count} transaction(s)`,
+                        `📊 Cela représente ${salaryPercent}% de vos dépenses totales ($${totalExpenses.toFixed(0)})`,
+                        `📈 Et ${revenuePercent}% de vos revenus totaux ($${totalRevenue.toFixed(0)})`
                     ]
                 };
                 
             case 'top_expenses':
-                const topExpenses = data.map(([cat, d]) => ({
-                    name: cat,
-                    amount: d.exits,
-                    percent: ((d.exits / totalExpenses) * 100).toFixed(1)
-                }));
-                
                 return {
                     type: 'list',
-                    title: '📊 Top 5 de vos Dépenses',
-                    mainMetric: {
-                        label: 'Total Top 5',
-                        value: `$${topExpenses.reduce((sum, e) => sum + e.amount, 0).toFixed(0)}`,
-                        subtitle: `${((topExpenses.reduce((sum, e) => sum + e.amount, 0) / totalExpenses) * 100).toFixed(0)}% du total`
-                    },
-                    items: topExpenses.map((expense, index) => ({
+                    title: '📊 Top Dépenses de vos Données',
+                    items: data.map(([category, categoryData], index) => ({
                         rank: index + 1,
-                        icon: index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '📊',
-                        label: expense.name,
-                        value: `$${expense.amount.toFixed(0)}`,
-                        percent: `${expense.percent}%`,
-                        action: parseFloat(expense.percent) > 20 ? '⚠️ À optimiser' : '✅'
+                        label: category,
+                        value: `$${categoryData.exits.toFixed(0)}`,
+                        subtitle: `${((categoryData.exits / totalExpenses) * 100).toFixed(1)}% du total`
                     })),
                     insights: [
-                        topExpenses[0].percent > 30 ? '🔴 Concentration excessive sur une dépense' : '✅ Bonne répartition',
-                        '💡 Focus sur les 3 premières pour maximum d\'impact',
-                        '📈 Ces 5 catégories représentent votre levier principal'
+                        `📊 ${data.length} catégories de dépenses analysées`,
+                        `💰 Total combiné: $${data.reduce((sum, [_, d]) => sum + d.exits, 0).toFixed(0)}`,
+                        `📈 Représente ${((data.reduce((sum, [_, d]) => sum + d.exits, 0) / totalExpenses) * 100).toFixed(1)}% du total`
                     ]
                 };
                 
@@ -4341,7 +4896,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         to { opacity: 1; transform: translateY(0); }
                     }
                     .main-metric {
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        background: #111111;
                         color: white;
                         padding: 24px;
                         border-radius: 12px;
@@ -4373,7 +4928,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         align-items: center;
                         gap: 12px;
                         padding: 12px;
-                        background: #f8f9fa;
+                        background: #1a1a1a;
                         border-radius: 8px;
                     }
                     .detail-icon {
@@ -4381,26 +4936,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     .detail-label {
                         font-size: 12px;
-                        color: #5f6368;
+                        color: #999999;
                     }
                     .detail-value {
                         font-size: 16px;
                         font-weight: 600;
-                        color: #202124;
+                        color: #ffffff;
                     }
                     .insights-section {
-                        background: #f0f7ff;
+                        background: #0a0a0a;
                         padding: 16px;
                         border-radius: 8px;
                         margin: 20px 0;
                     }
                     .insights-section h4 {
                         margin: 0 0 12px 0;
-                        color: #1a73e8;
+                        color: #ffffff;
                     }
                     .insight-item {
                         padding: 8px 0;
-                        border-bottom: 1px solid rgba(0,0,0,0.05);
+                        border-bottom: 1px solid #333333;
                     }
                     .insight-item:last-child {
                         border-bottom: none;
@@ -4434,7 +4989,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             datasets: [{
                                 data: response.chart.data.map(d => d.value),
                                 backgroundColor: [
-                                    '#4285f4', '#34a853', '#fbbc04', '#ea4335', '#9c27b0'
+                                    '#ffffff', '#cccccc', '#999999', '#666666', '#333333'
                                 ]
                             }]
                         },
@@ -4542,8 +5097,518 @@ document.addEventListener('DOMContentLoaded', function() {
         return '$' + numValue.toFixed(0);
     }
     
+    /**
+     * Fonction pour encadrer une cellule dans Google Sheets
+     */
+    async function highlightCellInGoogleSheets(cellRef) {
+        console.log('📍 [DEBUG] Tentative d\'encadrement de la cellule:', cellRef);
+        
+        try {
+            // Envoyer un message au content script pour encadrer la cellule
+            const tabs = await chrome.tabs.query({active: true, currentWindow: true});
+            if (tabs[0]) {
+                await chrome.tabs.sendMessage(tabs[0].id, {
+                    action: 'highlightCell',
+                    cellRef: cellRef,
+                    style: {
+                        border: '3px solid #000000',
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        boxShadow: '0 0 10px rgba(0, 0, 0, 0.5)'
+                    }
+                });
+                console.log('🚀 [DEBUG] Message d\'encadrement envoyé pour la cellule:', cellRef);
+            }
+        } catch (error) {
+            console.error('❌ [DEBUG] Erreur encadrement cellule:', error);
+        }
+    }
+    
+    /**
+     * Amélioration du système de réponse avec encadrement des cellules
+     */
+    function enhanceResponseWithCellHighlighting(response, intent, analysis) {
+        if (!appState.cellReferences) return response;
+        
+        let cellToHighlight = null;
+        let cellDescription = '';
+        
+        switch (intent) {
+            case 'biggest_expense':
+                if (appState.cellReferences.largestExpense) {
+                    cellToHighlight = appState.cellReferences.largestExpense.cellRef;
+                    cellDescription = `Plus grosse dépense en cellule ${cellToHighlight}: $${appState.cellReferences.largestExpense.value.toFixed(0)}`;
+                }
+                break;
+                
+            case 'revenue':
+                if (appState.cellReferences.largestRevenue) {
+                    cellToHighlight = appState.cellReferences.largestRevenue.cellRef;
+                    cellDescription = `Plus gros revenu en cellule ${cellToHighlight}: $${appState.cellReferences.largestRevenue.value.toFixed(0)}`;
+                }
+                break;
+                
+            case 'explain_excel':
+                // Pour "explique-moi l'excel", encadrer la plus grosse dépense
+                if (appState.cellReferences.largestExpense) {
+                    cellToHighlight = appState.cellReferences.largestExpense.cellRef;
+                    cellDescription = `Cellule ${cellToHighlight} mise en évidence (plus grosse dépense)`;
+                }
+                break;
+        }
+        
+        if (cellToHighlight) {
+            // Ajouter l'information de la cellule à la réponse
+            if (response.insights) {
+                response.insights.push(`📍 **Cellule mise en évidence**: ${cellDescription}`);
+            }
+            
+            // Encadrer la cellule
+            setTimeout(() => {
+                highlightCellInGoogleSheets(cellToHighlight);
+            }, 1000); // Délai pour laisser le temps à la réponse de s'afficher
+        }
+        
+        return response;
+    }
+    
+    /**
+     * Affiche l'explication détaillée d'un calcul
+     */
+    function showCalculationExplanation(calculationType, value, element) {
+        // Récupérer les données actuelles d'analyse
+        chrome.runtime.sendMessage({
+            action: 'getLastAnalysis'
+        }, (response) => {
+            if (response && response.success && response.analysis) {
+                const explanation = generateCalculationExplanation(calculationType, value, response.analysis);
+                displayCalculationExplanation(explanation, element);
+            } else {
+                console.error('❌ Impossible de récupérer les données d\'analyse pour l\'explication');
+                showSimpleExplanation(calculationType, value, element);
+            }
+        });
+    }
+
+    /**
+     * Génère l'explication détaillée d'un calcul
+     */
+    function generateCalculationExplanation(type, value, analysis) {
+        const totals = analysis.totals || {};
+        const grouped = analysis.grouped || {};
+        const transactions = analysis.transactions || [];
+        const numericValue = parseFloat(value.replace(/[^0-9.-]/g, '')) || 0;
+        
+        switch (type) {
+            case 'profit':
+                const profit = totals.entries - totals.exits;
+                const profitPositive = profit >= 0;
+                return {
+                    title: profitPositive ? '💰 Calcul du Profit Net' : '📉 Calcul de la Perte Nette',
+                    formula: 'Profit = Total Revenus - Total Dépenses',
+                    calculation: `$${totals.entries.toFixed(0)} - $${totals.exits.toFixed(0)} = $${profit.toFixed(0)}`,
+                    breakdown: [
+                        `📥 **Total Revenus**: $${totals.entries.toFixed(0)} (somme de toutes les entrées)`,
+                        `📤 **Total Dépenses**: $${totals.exits.toFixed(0)} (somme de toutes les sorties)`,
+                        `💵 **Résultat**: ${profitPositive ? 'Bénéfice' : 'Perte'} de $${Math.abs(profit).toFixed(0)}`,
+                        `📊 **Marge**: ${totals.entries > 0 ? ((profit / totals.entries) * 100).toFixed(1) : 0}%`
+                    ],
+                    insight: profitPositive ? 
+                        `✅ Votre entreprise est rentable avec un profit de $${Math.abs(profit).toFixed(0)}` :
+                        `⚠️ Votre entreprise a une perte de $${Math.abs(profit).toFixed(0)}. Réduisez les dépenses ou augmentez les revenus.`
+                };
+
+            case 'biggest_expense':
+                // Utiliser la vraie plus grosse transaction individuelle
+                if (analysis.biggestExpense && analysis.biggestExpense.amount > 0) {
+                    const expense = analysis.biggestExpense;
+                    const percentOfTotal = ((expense.amount / totals.exits) * 100).toFixed(1);
+                    const percentOfRevenues = ((expense.amount / totals.entries) * 100).toFixed(1);
+                    
+                    return {
+                        title: '💸 Plus Grosse Dépense - Transaction Individuelle',
+                        formula: 'Max(toutes les valeurs Debit USD)',
+                        calculation: `"${expense.description}" = $${expense.amount.toFixed(0)}`,
+                        breakdown: [
+                            `📄 **Description**: ${expense.description}`,
+                            `💰 **Montant**: $${expense.amount.toFixed(0)}`,
+                            `📅 **Date**: ${expense.date}`,
+                            `📊 **Ligne dans le CSV**: ${expense.rowIndex}`,
+                            `📈 **Part du budget total**: ${percentOfTotal}%`,
+                            `⚖️ **Part des revenus**: ${percentOfRevenues}%`
+                        ],
+                        insight: parseFloat(percentOfTotal) > 30 ? 
+                            `🚨 Cette seule transaction représente ${percentOfTotal}% de votre budget total !` :
+                            parseFloat(percentOfTotal) > 15 ?
+                            `⚠️ Cette transaction importante (${percentOfTotal}% du budget) mérite attention` :
+                            `✅ Cette dépense (${percentOfTotal}% du budget) est proportionnée.`
+                    };
+                }
+                return {
+                    title: '💸 Plus Grosse Dépense',
+                    formula: 'Aucune dépense trouvée',
+                    calculation: 'N/A',
+                    breakdown: ['Aucune transaction avec montant Debit détectée'],
+                    insight: 'Vérifiez que vos données contiennent des valeurs dans la colonne Debit (USD).'
+                };
+
+            case 'total_revenues':
+                const revenueTransactions = transactions.filter(t => t.credit > 0);
+                const topRevenueSources = Object.entries(grouped)
+                    .filter(([_, data]) => data.entries > 0)
+                    .sort((a, b) => b[1].entries - a[1].entries)
+                    .slice(0, 3);
+                
+                return {
+                    title: '📥 Total Revenus - Calcul Détaillé',
+                    formula: 'Total = Σ(toutes les valeurs Credit > 0)',
+                    calculation: `${revenueTransactions.length} transactions = $${totals.entries.toFixed(0)}`,
+                    breakdown: [
+                        `🔢 **Nombre de transactions**: ${revenueTransactions.length}`,
+                        `💰 **Total**: $${totals.entries.toFixed(0)}`,
+                        `📊 **Moyenne par transaction**: $${revenueTransactions.length > 0 ? (totals.entries / revenueTransactions.length).toFixed(0) : 0}`,
+                        ...topRevenueSources.map(([source, data], index) => 
+                            `${index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'} **${source}**: $${data.entries.toFixed(0)} (${((data.entries / totals.entries) * 100).toFixed(1)}%)`
+                        )
+                    ],
+                    insight: topRevenueSources.length > 0 && topRevenueSources[0][1].entries / totals.entries > 0.5 ?
+                        `⚠️ ${((topRevenueSources[0][1].entries / totals.entries) * 100).toFixed(0)}% de vos revenus viennent d'une seule source. Diversifiez vos revenus.` :
+                        `✅ Vos revenus sont bien diversifiés entre ${topRevenueSources.length} sources principales.`
+                };
+
+            case 'total_expenses':
+                const expenseTransactions = transactions.filter(t => t.debit > 0);
+                const topExpenseCategories = Object.entries(grouped)
+                    .filter(([_, data]) => data.exits > 0)
+                    .sort((a, b) => b[1].exits - a[1].exits)
+                    .slice(0, 3);
+                
+                return {
+                    title: '📤 Total Dépenses - Calcul Détaillé',
+                    formula: 'Total = Σ(toutes les valeurs Debit > 0)',
+                    calculation: `${expenseTransactions.length} transactions = $${totals.exits.toFixed(0)}`,
+                    breakdown: [
+                        `🔢 **Nombre de transactions**: ${expenseTransactions.length}`,
+                        `💸 **Total**: $${totals.exits.toFixed(0)}`,
+                        `📊 **Moyenne par transaction**: $${expenseTransactions.length > 0 ? (totals.exits / expenseTransactions.length).toFixed(0) : 0}`,
+                        ...topExpenseCategories.map(([category, data], index) => 
+                            `${index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'} **${category}**: $${data.exits.toFixed(0)} (${((data.exits / totals.exits) * 100).toFixed(1)}%)`
+                        )
+                    ],
+                    insight: topExpenseCategories.length > 0 && topExpenseCategories[0][1].exits / totals.exits > 0.4 ?
+                        `🎯 ${((topExpenseCategories[0][1].exits / totals.exits) * 100).toFixed(0)}% de vos dépenses vont vers "${topExpenseCategories[0][0]}". Optimisez cette catégorie.` :
+                        `✅ Vos dépenses sont bien réparties entre ${topExpenseCategories.length} catégories principales.`
+                };
+
+            default:
+                return {
+                    title: '🔢 Explication du Calcul',
+                    formula: 'Calcul en cours d\'analyse...',
+                    calculation: value,
+                    breakdown: [`Valeur: ${value}`, 'Données en cours de traitement'],
+                    insight: 'Analyse détaillée disponible après traitement complet des données.'
+                };
+        }
+    }
+
+    /**
+     * Affiche un tooltip d'explication simple quand les données détaillées ne sont pas disponibles
+     */
+    function showSimpleExplanation(calculationType, value, element) {
+        const simpleExplanations = {
+            'profit': 'Profit = Total Revenus - Total Dépenses',
+            'biggest_expense': 'Plus grande transaction individuelle dans la colonne Debit (USD)',
+            'total_revenues': 'Somme de toutes les valeurs dans Credit (USD)',
+            'total_expenses': 'Somme de toutes les valeurs dans Debit (USD)'
+        };
+        
+        const explanation = {
+            title: '🔢 Calcul Rapide',
+            formula: simpleExplanations[calculationType] || 'Calcul en cours...',
+            calculation: value,
+            breakdown: ['Données en cours de récupération...'],
+            insight: 'Rechargez la page pour voir l\'analyse détaillée.'
+        };
+        
+        displayCalculationExplanation(explanation, element);
+    }
+
+    /**
+     * Affiche l'explication de calcul dans un tooltip élégant
+     */
+    function displayCalculationExplanation(explanation, triggerElement) {
+        // Supprimer tout tooltip existant
+        const existingTooltip = document.querySelector('.calculation-explanation-tooltip');
+        if (existingTooltip) {
+            existingTooltip.remove();
+        }
+
+        const tooltip = document.createElement('div');
+        tooltip.className = 'calculation-explanation-tooltip';
+        tooltip.style.cssText = `
+            position: fixed;
+            background: linear-gradient(145deg, rgba(5,5,5,0.98), rgba(15,15,15,0.98));
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 20px;
+            color: #ffffff;
+            font-size: 12px;
+            max-width: 350px;
+            z-index: 10000;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+            backdrop-filter: blur(12px);
+            opacity: 0;
+            transform: translateY(15px) scale(0.9);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        `;
+
+        let tooltipHTML = `
+            <div class="explanation-header" style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <h4 style="margin: 0; color: #ffffff; font-size: 14px; font-weight: 600;">${explanation.title}</h4>
+            </div>
+            
+            <div class="formula-section" style="margin-bottom: 14px;">
+                <div style="color: rgba(255,255,255,0.7); font-size: 10px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Formule</div>
+                <div style="color: #ffffff; font-weight: 500; background: rgba(255,255,255,0.08); padding: 10px; border-radius: 6px; font-family: 'SF Mono', Monaco, monospace; font-size: 11px; border-left: 3px solid rgba(255,255,255,0.3);">
+                    ${explanation.formula}
+                </div>
+            </div>
+            
+            <div class="calculation-section" style="margin-bottom: 14px;">
+                <div style="color: rgba(255,255,255,0.7); font-size: 10px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Calcul</div>
+                <div style="color: #ffffff; font-weight: 600; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; font-family: 'SF Mono', Monaco, monospace; font-size: 12px; border-left: 3px solid rgba(255,255,255,0.5);">
+                    ${explanation.calculation}
+                </div>
+            </div>
+        `;
+
+        if (explanation.breakdown && explanation.breakdown.length > 0) {
+            tooltipHTML += `
+                <div class="breakdown-section" style="margin-bottom: 14px;">
+                    <div style="color: rgba(255,255,255,0.7); font-size: 10px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Détail du calcul</div>
+                    <div style="background: rgba(255,255,255,0.03); border-radius: 6px; padding: 8px;">
+                        ${explanation.breakdown.map(item => 
+                            `<div style="color: rgba(255,255,255,0.9); margin-bottom: 4px; line-height: 1.4; font-size: 11px;">${item}</div>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        if (explanation.insight) {
+            tooltipHTML += `
+                <div class="insight-section" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <div style="color: rgba(255,255,255,0.7); font-size: 10px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">💡 Insight</div>
+                    <div style="color: rgba(255,255,255,0.95); font-size: 11px; line-height: 1.5; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; font-weight: 500;">
+                        ${explanation.insight}
+                    </div>
+                </div>
+            `;
+        }
+
+        tooltipHTML += `
+            <div class="close-button" style="
+                position: absolute; 
+                top: 12px; 
+                right: 12px; 
+                cursor: pointer; 
+                color: rgba(255,255,255,0.5); 
+                font-size: 18px; 
+                width: 24px; 
+                height: 24px; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                border-radius: 50%; 
+                transition: all 0.2s ease;
+                font-weight: 300;
+            " 
+            onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'; this.style.color='rgba(255,255,255,0.8)'" 
+            onmouseout="this.style.backgroundColor='transparent'; this.style.color='rgba(255,255,255,0.5)'" 
+            onclick="this.parentElement.remove()">×</div>
+        `;
+
+        tooltip.innerHTML = tooltipHTML;
+        document.body.appendChild(tooltip);
+
+        // Positionner le tooltip intelligemment
+        const rect = triggerElement.getBoundingClientRect();
+        const tooltipRect = tooltip.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        let left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+        let top = rect.bottom + 15;
+
+        // Ajustements pour rester dans le viewport avec plus de marge
+        if (left < 15) left = 15;
+        if (left + tooltipRect.width > viewportWidth - 15) left = viewportWidth - tooltipRect.width - 15;
+        if (top + tooltipRect.height > viewportHeight - 15) top = rect.top - tooltipRect.height - 15;
+
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+
+        // Animation d'apparition fluide
+        requestAnimationFrame(() => {
+            tooltip.style.opacity = '1';
+            tooltip.style.transform = 'translateY(0) scale(1)';
+        });
+
+        // Auto-hide après 12 secondes avec animation de sortie
+        setTimeout(() => {
+            if (tooltip.parentElement) {
+                tooltip.style.opacity = '0';
+                tooltip.style.transform = 'translateY(15px) scale(0.9)';
+                setTimeout(() => tooltip.remove(), 400);
+            }
+        }, 12000);
+    }
+
+    /**
+     * Affiche l'état de chargement pendant la navigation
+     */
+    function showNavigationLoadingState(navigationState) {
+        const container = document.getElementById('reportContainer');
+        if (!container) return;
+        
+        const currentTime = Date.now();
+        const elapsedTime = navigationState.startTime ? 
+            Math.floor((currentTime - navigationState.startTime) / 1000) : 0;
+        
+        container.innerHTML = `
+            <div class="navigation-loading-overlay" style="
+                position: relative;
+                background: linear-gradient(135deg, rgba(20, 20, 20, 0.98), rgba(30, 30, 30, 0.98));
+                border-radius: 16px;
+                padding: 40px 30px;
+                text-align: center;
+                color: #ffffff;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            ">
+                <div class="loading-animation" style="
+                    width: 60px;
+                    height: 60px;
+                    margin: 0 auto 24px auto;
+                    border: 3px solid rgba(255, 255, 255, 0.1);
+                    border-top: 3px solid #ffffff;
+                    border-radius: 50%;
+                    animation: spin 1.5s linear infinite;
+                "></div>
+                
+                <h3 style="
+                    font-size: 18px;
+                    font-weight: 600;
+                    margin: 0 0 16px 0;
+                    color: #ffffff;
+                ">📍 Changement de page détecté</h3>
+                
+                <div class="loading-steps" style="
+                    background: rgba(0, 0, 0, 0.3);
+                    border-radius: 8px;
+                    padding: 20px;
+                    margin: 20px 0;
+                    text-align: left;
+                    font-size: 13px;
+                    line-height: 1.6;
+                ">
+                    <div class="loading-step" style="color: #ffffff; margin-bottom: 8px;">
+                        ✅ Navigation détectée
+                    </div>
+                    <div class="loading-step" style="color: rgba(255,255,255,0.8); margin-bottom: 8px;">
+                        🔄 Chargement des nouvelles données...
+                    </div>
+                    <div class="loading-step" style="color: rgba(255,255,255,0.6); margin-bottom: 8px;">
+                        📊 Analyse financière en préparation...
+                    </div>
+                    <div class="loading-step" style="color: rgba(255,255,255,0.4);">
+                        📈 Génération du rapport à suivre...
+                    </div>
+                </div>
+                
+                <div class="loading-info" style="
+                    font-size: 12px;
+                    color: rgba(255, 255, 255, 0.7);
+                    margin-top: 16px;
+                ">
+                    <div>🕒 Temps écoulé: ${elapsedTime}s</div>
+                    <div style="margin-top: 4px;">📄 Analyse automatique en cours</div>
+                </div>
+                
+                <div class="loading-tips" style="
+                    background: rgba(255, 255, 255, 0.02);
+                    border-radius: 6px;
+                    padding: 12px;
+                    margin-top: 20px;
+                    font-size: 11px;
+                    color: rgba(255, 255, 255, 0.6);
+                    border-left: 3px solid rgba(255, 255, 255, 0.2);
+                ">
+                    💡 L'extension détecte automatiquement les changements et analyse vos nouvelles données financières
+                </div>
+            </div>
+            
+            <style>
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+        `;
+        
+        // Mettre à jour le temps toutes les secondes
+        let checkCount = 0;
+        const maxChecks = 25; // Maximum 25 secondes de vérification
+        
+        const timeInterval = setInterval(() => {
+            checkCount++;
+            
+            const timeElement = container.querySelector('.loading-info div:first-child');
+            if (timeElement && navigationState.startTime) {
+                const currentElapsed = Math.floor((Date.now() - navigationState.startTime) / 1000);
+                timeElement.textContent = `🕒 Temps écoulé: ${currentElapsed}s`;
+            }
+            
+            // Arrêter si plus en navigation ou après max checks
+            if (checkCount >= maxChecks) {
+                clearInterval(timeInterval);
+                showStatus('Timeout - Rechargement des données...');
+                setTimeout(loadExistingReport, 1000);
+                return;
+            }
+            
+            // Vérifier l'état seulement toutes les 2 secondes pour éviter le spam
+            if (checkCount % 2 === 0) {
+                chrome.runtime.sendMessage({ action: 'getCurrentState' }, (response) => {
+                    if (response?.state?.navigationState?.isNavigating === false) {
+                        clearInterval(timeInterval);
+                        // Recharger l'état normal
+                        setTimeout(() => {
+                            loadExistingReport();
+                        }, 500);
+                    }
+                });
+            }
+        }, 1000);
+        
+        // Auto-timeout après 30 secondes
+        setTimeout(() => {
+            clearInterval(timeInterval);
+            if (container.querySelector('.navigation-loading-overlay')) {
+                showStatus('Chargement terminé - Actualisation des données...');
+                setTimeout(loadExistingReport, 2000);
+            }
+        }, 30000);
+    }
+
+    // Rendre les fonctions disponibles globalement
+    window.showCalculationExplanation = showCalculationExplanation;
+    window.generateCalculationExplanation = generateCalculationExplanation;
+    window.displayCalculationExplanation = displayCalculationExplanation;
+    window.showNavigationLoadingState = showNavigationLoadingState;
+
     // Lancer l'initialisation
     initialize();
 });
 
-console.log('📊 Financial Analytics v2 chargé - Mode automatique activé avec Agent 5 HoverInsights');
+console.log('📊 Financial Analytics v2 chargé - Mode automatique activé avec Agent 5 HoverInsights + Calcul Explanations');
